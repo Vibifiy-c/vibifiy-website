@@ -9,7 +9,7 @@
 </head>
 <body>
     <nav class="navbar">
-        <div class="logo"> Vibifiy</div>
+        <div class="logo">⚡ Vibifiy</div>
         <div class="nav-links">
             <a href="#dashboard" class="nav-link active">Dashboard</a>
             <a href="#download" class="nav-link">Download</a>
@@ -54,11 +54,20 @@
                 <div class="form-container">
                     <h3>Leave a Review</h3>
                     <form id="reviewForm">
-                        <input type="text" id="reviewName" placeholder="Your Name" required>
-                        <div class="star-rating" id="starRating">
-                            <span data-value="1">★</span><span data-value="2">★</span><span data-value="3">★</span><span data-value="4">★</span><span data-value="5">★</span>
+                        <div class="input-group">
+                            <label>Your Name</label>
+                            <input type="text" id="reviewName" placeholder="John Doe" required>
                         </div>
-                        <textarea id="reviewText" placeholder="Share your experience..." required></textarea>
+                        <div class="input-group">
+                            <label>Your Rating</label>
+                            <div class="star-rating" id="starRating">
+                                <span data-value="1">★</span><span data-value="2">★</span><span data-value="3">★</span><span data-value="4">★</span><span data-value="5">★</span>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Your Review</label>
+                            <textarea id="reviewText" placeholder="Share your experience..." required></textarea>
+                        </div>
                         <button type="submit" class="btn-primary">Submit Review</button>
                     </form>
                 </div>
@@ -75,12 +84,21 @@
                     <form id="bugForm">
                         <div class="input-group">
                             <label>Bug Title</label>
-                            <input type="text" id="bugTitle" required>
+                            <input type="text" id="bugTitle" placeholder="e.g., App crashes on startup" required>
                             <span class="error-msg">Title is required</span>
                         </div>
                         <div class="input-group">
+                            <label>Severity</label>
+                            <select id="bugSeverity" style="width: 100%; padding: 0.8rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-secondary); color: var(--text-primary);">
+                                <option value="low">Low - Minor issue</option>
+                                <option value="medium" selected>Medium - Affects functionality</option>
+                                <option value="high">High - Major issue</option>
+                                <option value="critical">Critical - System breaking</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
                             <label>Description</label>
-                            <textarea id="bugDesc" required></textarea>
+                            <textarea id="bugDesc" placeholder="Describe the bug in detail..." required></textarea>
                             <span class="error-msg">Description is required</span>
                         </div>
                         <button type="submit" class="btn-primary" id="submitBugBtn">Report Bug</button>
@@ -91,7 +109,7 @@
     </main>
 
     <footer>
-        <p>Powered by vanilla JavaScript. Hosted on <a href="https://js.org" target="_blank">js.org</a></p>
+        <p>Powered by vanilla JavaScript & Supabase. Hosted on <a href="https://js.org" target="_blank">js.org</a></p>
     </footer>
 </body>
 </html>
