@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibifiy | Open Source Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Defer loading of JS to ensure it runs after HTML parses -->
+    <script type="module" src="main.js" defer></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">⚡ Vibifiy Dashboard</div>
+        <div class="controls">
+            <input type="text" id="searchInput" placeholder="Search projects..." aria-label="Search projects">
+            <button id="themeToggle" aria-label="Toggle dark mode">🌙</button>
+        </div>
+    </nav>
+
+    <main class="dashboard">
+        <!-- Stats Row: Populated by JS -->
+        <section class="stats-grid" id="statsGrid">
+            <!-- JS will inject: Total Projects, Total Downloads, Active Contributors -->
+        </section>
+
+        <!-- Chart Section: Drawn by JS Canvas API -->
+        <section class="chart-container">
+            <h2>Download Trends (Last 7 Days)</h2>
+            <canvas id="downloadChart"></canvas>
+        </section>
+
+        <!-- Projects List: Rendered dynamically by JS -->
+        <section class="projects-section">
+            <h2>Open Source Projects</h2>
+            <div id="projectsList" class="projects-grid">
+                <!-- JS will inject project cards here -->
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Powered by vanilla JavaScript. Hosted on <a href="https://js.org" target="_blank">js.org</a></p>
+    </footer>
+</body>
+</html>
