@@ -400,9 +400,41 @@ document.getElementById('submitDiscussionBtn')?.addEventListener('click', async 
 
 // Placeholder functions for discussion actions (to prevent console errors)
 window.deleteDiscussion = async (id) => {
-    if(confirm('Delete this discussion?')) {
-        await supabase.from('discussions').delete().eq('id', id);
-        initDiscussions();
+    if (!confirm('Delete this discussion? This cannot be undone.')) return;
+    
+    try {
+        // Remove from UI immediately for a smooth feel
+        const element = document.querySelector(`[data-discussion-id="${id}"]`);
+        if (element) {
+            element.style.transition = 'all 0.3s ease';
+            element.style.opacity = '0';
+            element.style.transform = 'translateY(-20px)';
+            element.style.pointerEvents = 'none';
+        }
+        
+        // Delete from database
+        const { error } = await supabase.from('discussions').delete().eq('id', id);
+        
+        if (error) {
+            console.error('Delete error:', error);
+            alert('Failed to delete. Check console for details.');
+            // Revert UI if it failed
+            if (element) {
+                element.style.opacity = '1';
+                element.style.transform = 'translateY(0)';
+                element.style.pointerEvents = 'auto';
+            }
+        } else {
+            // Fully remove from DOM after animation
+            setTimeout(() => {
+                if (element) element.remove();
+                // Reload if it was the last one
+                const remaining = document.querySelectorAll('.discussion-card');
+                if (remaining.length === 0) initDiscussions();
+            }, 300);
+        }
+    } catch (err) {
+        console.error(err);
     }
 };
 window.repostDiscussion = (id) => alert('Repost feature coming soon!');
