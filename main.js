@@ -16,11 +16,9 @@ const GITHUB_ORG = 'Vibifiy-c';
 async function fetchGitHubData() {
     try {
         let response = await fetch(`https://api.github.com/orgs/${GITHUB_ORG}/repos?sort=updated&direction=desc`);
-        
         if (!response.ok) {
             response = await fetch(`https://api.github.com/users/${GITHUB_ORG}/repos?sort=updated&direction=desc`);
         }
-        
         if (!response.ok) throw new Error('Failed to fetch repositories');
         
         const repos = await response.json();
@@ -37,11 +35,9 @@ async function fetchGitHubData() {
 async function renderDashboard() {
     const projectsList = document.getElementById('projectsList');
     const orgStats = document.getElementById('orgStats');
-    
     if (!projectsList || !orgStats) return;
 
     const data = await fetchGitHubData();
-
     if (!data || data.repos.length === 0) {
         projectsList.innerHTML = `
             <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
@@ -52,18 +48,9 @@ async function renderDashboard() {
     }
 
     orgStats.innerHTML = `
-        <div class="stat-card">
-            <h3>Total Projects</h3>
-            <div class="value">${data.totalCount}</div>
-        </div>
-        <div class="stat-card">
-            <h3>Total Stars</h3>
-            <div class="value">${data.totalStars.toLocaleString()}</div>
-        </div>
-        <div class="stat-card">
-            <h3>Total Forks</h3>
-            <div class="value">${data.totalForks.toLocaleString()}</div>
-        </div>
+        <div class="stat-card"><h3>Total Projects</h3><div class="value">${data.totalCount}</div></div>
+        <div class="stat-card"><h3>Total Stars</h3><div class="value">${data.totalStars.toLocaleString()}</div></div>
+        <div class="stat-card"><h3>Total Forks</h3><div class="value">${data.totalForks.toLocaleString()}</div></div>
     `;
 
     projectsList.innerHTML = data.repos.map(repo => `
@@ -79,7 +66,7 @@ async function renderDashboard() {
                     ${repo.language || 'Unknown'}
                 </span>
                 <span>⭐ ${repo.stargazers_count}</span>
-                <span> ${repo.forks_count}</span>
+                <span>🍴 ${repo.forks_count}</span>
             </div>
             <a href="${repo.html_url}" target="_blank" class="project-link">View on GitHub ↗</a>
         </article>
@@ -87,23 +74,12 @@ async function renderDashboard() {
 }
 
 function getLanguageColor(lang) {
-    const colors = {
-        'JavaScript': '#f1e05a',
-        'TypeScript': '#3178c6',
-        'HTML': '#e34c26',
-        'CSS': '#563d7c',
-        'Python': '#3572A5',
-        'Java': '#b07219',
-        'C++': '#f34b7d',
-        'Go': '#00ADD8',
-        'Rust': '#dea584',
-        'Shell': '#89e051'
-    };
+    const colors = { 'JavaScript': '#f1e05a', 'TypeScript': '#3178c6', 'HTML': '#e34c26', 'CSS': '#563d7c', 'Python': '#3572A5', 'Java': '#b07219', 'C++': '#f34b7d', 'Go': '#00ADD8', 'Rust': '#dea584', 'Shell': '#89e051' };
     return colors[lang] || '#8b949e';
 }
 
 // ============================================
-// 3. DOWNLOAD PAGE (Hardcoded Data)
+// 3. DOWNLOAD PAGE
 // ============================================
 const downloadProducts = [
     { name: "VibiClaw", version: "v2.4.0", description: "Advanced code editor.", size: "12.4 MB", downloads: 15420, license: "MIT" },
@@ -116,17 +92,14 @@ function renderDownloads() {
     if (!container) return;
     container.innerHTML = downloadProducts.map(product => `
         <a href="#" class="download-btn" onclick="alert('Download starting for ${product.name}!'); return false;">
-            <span>
-                <strong>${product.name}</strong><br>
-                <small style="color: var(--text-secondary);">${product.version} • ${product.license}</small>
-            </span>
+            <span><strong>${product.name}</strong><br><small style="color: var(--text-secondary);">${product.version} • ${product.license}</small></span>
             <span style="font-weight: 600; color: var(--accent);">Download ⬇️</span>
         </a>
     `).join('');
 }
 
 // ============================================
-// 4. THEME & NAVIGATION
+// 4. THEME & NAVIGATION (ONLY ONE navigateTo!)
 // ============================================
 const themeToggle = document.getElementById('themeToggle');
 const savedTheme = localStorage.getItem('vibifiy-theme') || 'light';
@@ -137,7 +110,7 @@ themeToggle.addEventListener('click', () => {
     const newTheme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     document.body.setAttribute('data-theme', newTheme);
     localStorage.setItem('vibifiy-theme', newTheme);
-    themeToggle.textContent = newTheme === 'dark' ? '☀️' : '';
+    themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
 });
 
 const navLinks = document.querySelectorAll('.nav-link');
@@ -148,9 +121,9 @@ function navigateTo(pageId) {
         'dashboard': 'page-dashboard',
         'download': 'page-download',
         'reviews': 'page-reviews',
-        'bug': 'page-bug'
+        'bug': 'page-bug',
+        'discussions': 'page-discussions'
     };
-    
     const targetId = idMap[pageId] || 'page-dashboard';
     
     pages.forEach(page => page.classList.remove('active'));
@@ -163,14 +136,17 @@ function navigateTo(pageId) {
     if (activeLink) activeLink.classList.add('active');
     
     history.pushState({ page: pageId }, '', `#${pageId}`);
+    
+    if (pageId === 'reviews') loadReviews();
+    if (pageId === 'discussions') initDiscussions();
+    
     window.scrollTo(0, 0);
 }
 
 navLinks.forEach(link => {
     link.addEventListener('click', (e) => {
         e.preventDefault();
-        const pageId = link.getAttribute('href').substring(1);
-        navigateTo(pageId);
+        navigateTo(link.getAttribute('href').substring(1));
     });
 });
 
@@ -204,51 +180,29 @@ async function loadReviews() {
     container.innerHTML = '<p style="text-align: center;">Loading reviews from server...</p>';
 
     const { data: reviews, error } = await supabase.from('reviews').select('*').order('created_at', { ascending: false });
-
-    if (error) {
-        container.innerHTML = '<p style="text-align: center; color: var(--error);">Error loading reviews.</p>';
-        return;
-    }
-
-    if (!reviews || reviews.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No reviews yet. Be the first!</p>';
-        return;
-    }
+    if (error) { container.innerHTML = '<p style="text-align: center; color: var(--error);">Error loading reviews.</p>'; return; }
+    if (!reviews || reviews.length === 0) { container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No reviews yet. Be the first!</p>'; return; }
 
     container.innerHTML = reviews.map(review => {
         const date = new Date(review.created_at).toLocaleDateString();
         const starsStr = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
-        return `
-            <div class="review-card">
-                <div class="review-header">
-                    <h4>${escapeHtml(review.name)}</h4>
-                    <span class="review-stars">${starsStr}</span>
-                </div>
-                <p class="review-text">${escapeHtml(review.text)}</p>
-                <span class="review-date">${date}</span>
-            </div>
-        `;
+        return `<div class="review-card"><div class="review-header"><h4>${escapeHtml(review.name)}</h4><span class="review-stars">${starsStr}</span></div><p class="review-text">${escapeHtml(review.text)}</p><span class="review-date">${date}</span></div>`;
     }).join('');
 }
 
 document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (selectedRating === 0) { alert('Please select a star rating!'); return; }
-    
     const name = document.getElementById('reviewName').value;
     const text = document.getElementById('reviewText').value;
     const btn = e.target.querySelector('button');
-    
     btn.innerText = 'Submitting...'; btn.disabled = true;
 
     const { error } = await supabase.from('reviews').insert([{ name, rating: selectedRating, text }]);
-
-    if (error) {
-        alert('Error: ' + error.message);
-    } else {
-        alert('Review saved to the cloud! ️');
-        e.target.reset();
-        selectedRating = 0;
+    if (error) { alert('Error: ' + error.message); } 
+    else {
+        alert('Review saved to the cloud! ☁️');
+        e.target.reset(); selectedRating = 0;
         stars.forEach(s => s.classList.remove('active'));
         loadReviews();
     }
@@ -278,42 +232,17 @@ document.getElementById('bugForm')?.addEventListener('submit', async (e) => {
     btn.innerText = 'Submitting...'; btn.disabled = true;
 
     const { error } = await supabase.from('bug_reports').insert([{
-        title: bugTitle.value,
-        description: bugDesc.value,
-        severity: document.getElementById('bugSeverity').value
+        title: bugTitle.value, description: bugDesc.value, severity: document.getElementById('bugSeverity').value
     }]);
 
-    if (error) {
-        alert('Error: ' + error.message);
-    } else {
-        alert('Bug report saved to the cloud! 🐛');
-        e.target.reset();
-    }
+    if (error) { alert('Error: ' + error.message); } 
+    else { alert('Bug report saved to the cloud! 🐛'); e.target.reset(); }
     btn.innerText = originalText; btn.disabled = false;
 });
 
 // ============================================
-// 7. UTILS & INIT
+// 7. SUPABASE: DISCUSSIONS
 // ============================================
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    renderDownloads();
-    renderDashboard(); // NEW: Fetch from GitHub API
-    
-    const hash = window.location.hash.substring(1);
-    navigateTo(hash || 'dashboard');
-});
-
-// ============================================
-// 8. DISCUSSIONS SYSTEM
-// ============================================
-
-// Generate or get user ID (browser fingerprint)
 function getUserId() {
     let userId = localStorage.getItem('vibifiy_user_id');
     if (!userId) {
@@ -323,197 +252,60 @@ function getUserId() {
     return userId;
 }
 
-// Fetch GitHub repo data for link cards
 async function fetchGitHubRepoData(url) {
     try {
         const match = url.match(/github\.com\/([^/]+)\/([^/]+)/);
         if (!match) return null;
-        
         const [, owner, repo] = match;
         const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
         if (!response.ok) return null;
-        
         return await response.json();
-    } catch (error) {
-        console.error('Error fetching GitHub data:', error);
-        return null;
-    }
+    } catch (error) { return null; }
 }
 
-// Upload images to Supabase storage
 async function uploadDiscussionImages(files, discussionId) {
     const uploadPromises = Array.from(files).map(async (file) => {
-        if (file.size > 5 * 1024 * 1024) {
-            throw new Error(`File ${file.name} exceeds 5MB limit`);
-        }
-        
         const fileExt = file.name.split('.').pop();
         const fileName = `${discussionId}_${Date.now()}_${file.name}`;
-        
-        const { error: uploadError } = await supabase.storage
-            .from('discussion-images')
-            .upload(fileName, file, { cacheControl: '3600', upsert: false });
-        
-        if (uploadError) throw uploadError;
-        
-        const { data: { publicUrl } } = supabase.storage
-            .from('discussion-images')
-            .getPublicUrl(fileName);
-        
+        const { error } = await supabase.storage.from('discussion-images').upload(fileName, file, { cacheControl: '3600', upsert: false });
+        if (error) throw error;
+        const { data: { publicUrl } } = supabase.storage.from('discussion-images').getPublicUrl(fileName);
         return { name: file.name, url: publicUrl };
     });
-    
     return await Promise.all(uploadPromises);
 }
 
-// Create discussion post
 async function createDiscussion(title, content, userName, githubLink, images = []) {
     const userId = getUserId();
     let imageData = [];
-    
-    // Upload images if any
     if (images.length > 0) {
         const tempId = 'temp_' + Date.now();
         imageData = await uploadDiscussionImages(images, tempId);
     }
-    
-    // Fetch GitHub data if link provided
-    let githubData = null;
-    if (githubLink) {
-        githubData = await fetchGitHubRepoData(githubLink);
-    }
-    
-    const { data, error } = await supabase
-        .from('discussions')
-        .insert([{
-            user_name: userName,
-            user_id: userId,
-            title,
-            content,
-            images: imageData,
-            github_link: githubLink
-        }])
-        .select();
-    
+    const { data, error } = await supabase.from('discussions').insert([{ user_name: userName, user_id: userId, title, content, images: imageData, github_link: githubLink }]).select();
     if (error) throw error;
     return data[0];
 }
 
-// Fetch all discussions
 async function loadDiscussions() {
-    const { data: discussions, error } = await supabase
-        .from('discussions')
-        .select(`
-            *,
-            reposts (count),
-            comments (count)
-        `)
-        .order('created_at', { ascending: false });
-    
+    const { data, error } = await supabase.from('discussions').select('*, reposts (count), comments (count)').order('created_at', { ascending: false });
     if (error) throw error;
-    return discussions || [];
+    return data || [];
 }
 
-// Create comment
-async function createComment(discussionId, content, userName, parentCommentId = null, images = []) {
-    const userId = getUserId();
-    let imageData = [];
-    
-    if (images.length > 0) {
-        const tempId = 'temp_' + Date.now();
-        imageData = await uploadDiscussionImages(images, tempId);
-    }
-    
-    const { data, error } = await supabase
-        .from('comments')
-        .insert([{
-            discussion_id: discussionId,
-            parent_comment_id: parentCommentId,
-            user_name: userName,
-            user_id: userId,
-            content,
-            images: imageData
-        }])
-        .select();
-    
-    if (error) throw error;
-    return data[0];
-}
-
-// Fetch comments for a discussion
-async function loadComments(discussionId) {
-    const { data: comments, error } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('discussion_id', discussionId)
-        .order('created_at', { ascending: true });
-    
-    if (error) throw error;
-    return comments || [];
-}
-
-// Repost a discussion
-async function repostDiscussion(discussionId) {
-    const userId = getUserId();
-    
-    const { error } = await supabase
-        .from('reposts')
-        .insert([{
-            user_id: userId,
-            discussion_id: discussionId
-        }]);
-    
-    if (error) throw error;
-}
-
-// Delete discussion
-async function deleteDiscussion(discussionId) {
-    const userId = getUserId();
-    
-    // Verify ownership
-    const { data: discussion } = await supabase
-        .from('discussions')
-        .select('user_id')
-        .eq('id', discussionId)
-        .single();
-    
-    if (discussion.user_id !== userId) {
-        throw new Error('You can only delete your own discussions');
-    }
-    
-    const { error } = await supabase
-        .from('discussions')
-        .delete()
-        .eq('id', discussionId);
-    
-    if (error) throw error;
-}
-
-// Render GitHub link card
 function renderGitHubCard(repoData) {
     if (!repoData) return '';
-    
-    return `
-        <div class="github-link-card">
-            <div class="github-card-header">
-                <img src="${repoData.owner.avatar_url}" alt="${repoData.owner.login}" class="github-avatar">
-                <div>
-                    <h4>${repoData.name}</h4>
-                    <p>${repoData.owner.login}</p>
-                </div>
-            </div>
-            <p class="github-description">${repoData.description || 'No description'}</p>
-            <div class="github-stats">
-                <span>⭐ ${repoData.stargazers_count}</span>
-                <span>🍴 ${repoData.forks_count}</span>
-                <span>🔔 ${repoData.watchers_count}</span>
-            </div>
-            <a href="${repoData.html_url}" target="_blank" class="github-link">View on GitHub ↗</a>
+    return `<div class="github-link-card">
+        <div class="github-card-header">
+            <img src="${repoData.owner.avatar_url}" alt="${repoData.owner.login}" class="github-avatar">
+            <div><h4>${repoData.name}</h4><p>${repoData.owner.login}</p></div>
         </div>
-    `;
+        <p class="github-description">${repoData.description || 'No description'}</p>
+        <div class="github-stats"><span>⭐ ${repoData.stargazers_count}</span><span>🍴 ${repoData.forks_count}</span></div>
+        <a href="${repoData.html_url}" target="_blank" class="github-link">View on GitHub ↗</a>
+    </div>`;
 }
 
-// Render discussion post
 function renderDiscussionPost(discussion) {
     const currentUserId = getUserId();
     const isOwner = discussion.user_id === currentUserId;
@@ -521,159 +313,117 @@ function renderDiscussionPost(discussion) {
     
     let imagesHtml = '';
     if (discussion.images && discussion.images.length > 0) {
-        imagesHtml = `<div class="discussion-images">${discussion.images.map(img => `
-            <img src="${img.url}" alt="${img.name}" class="discussion-image">
-        `).join('')}</div>`;
+        imagesHtml = `<div class="discussion-images">${discussion.images.map(img => `<img src="${img.url}" alt="${img.name}" class="discussion-image">`).join('')}</div>`;
     }
     
     let githubCardHtml = '';
     if (discussion.github_link) {
-        // We'll fetch and render GitHub data asynchronously
         fetchGitHubRepoData(discussion.github_link).then(repoData => {
             if (repoData) {
                 const cardContainer = document.querySelector(`[data-discussion-id="${discussion.id}"] .github-card-container`);
-                if (cardContainer) {
-                    cardContainer.innerHTML = renderGitHubCard(repoData);
-                }
+                if (cardContainer) cardContainer.innerHTML = renderGitHubCard(repoData);
             }
         });
         githubCardHtml = `<div class="github-card-container" data-discussion-id="${discussion.id}"><div class="loading-github">Loading GitHub preview...</div></div>`;
     }
     
-    return `
-        <article class="discussion-card" data-discussion-id="${discussion.id}">
-            <div class="discussion-header">
-                <div class="discussion-author">
-                    <div class="author-avatar">${discussion.user_name.charAt(0).toUpperCase()}</div>
-                    <div>
-                        <h4>${discussion.user_name}</h4>
-                        <span class="discussion-date">${date}</span>
-                    </div>
-                </div>
-                ${isOwner ? `
-                    <div class="discussion-actions">
-                        <button class="btn-icon" onclick="editDiscussion('${discussion.id}')">✏️</button>
-                        <button class="btn-icon" onclick="deleteDiscussion('${discussion.id}')">🗑️</button>
-                    </div>
-                ` : ''}
+    return `<article class="discussion-card" data-discussion-id="${discussion.id}">
+        <div class="discussion-header">
+            <div class="discussion-author">
+                <div class="author-avatar">${discussion.user_name.charAt(0).toUpperCase()}</div>
+                <div><h4>${escapeHtml(discussion.user_name)}</h4><span class="discussion-date">${date}</span></div>
             </div>
-            
-            <h3 class="discussion-title">${discussion.title}</h3>
-            <div class="discussion-content">${discussion.content}</div>
-            
-            ${imagesHtml}
-            ${githubCardHtml}
-            
-            <div class="discussion-footer">
-                <button class="discussion-action-btn" onclick="repostDiscussion('${discussion.id}')">
-                    🔁 Repost
-                </button>
-                <button class="discussion-action-btn" onclick="toggleComments('${discussion.id}')">
-                    💬 Comments (${discussion.comments?.[0]?.count || 0})
-                </button>
+            ${isOwner ? `<div class="discussion-actions"><button class="btn-icon" onclick="deleteDiscussion('${discussion.id}')">🗑️</button></div>` : ''}
+        </div>
+        <h3 class="discussion-title">${escapeHtml(discussion.title)}</h3>
+        <div class="discussion-content">${escapeHtml(discussion.content)}</div>
+        ${imagesHtml}${githubCardHtml}
+        <div class="discussion-footer">
+            <button class="discussion-action-btn" onclick="repostDiscussion('${discussion.id}')">🔁 Repost</button>
+            <button class="discussion-action-btn" onclick="toggleComments('${discussion.id}')">💬 Comments</button>
+        </div>
+        <div id="comments-${discussion.id}" class="comments-section" style="display: none;">
+            <div class="comment-form">
+                <input type="text" id="comment-name-${discussion.id}" placeholder="Your name">
+                <textarea id="comment-text-${discussion.id}" placeholder="Write a comment..."></textarea>
+                <button class="btn-primary" onclick="submitComment('${discussion.id}')">Post Comment</button>
             </div>
-            
-            <div id="comments-${discussion.id}" class="comments-section" style="display: none;">
-                <div class="comment-form">
-                    <input type="text" id="comment-name-${discussion.id}" placeholder="Your name">
-                    <textarea id="comment-text-${discussion.id}" placeholder="Write a comment..."></textarea>
-                    <button class="btn-primary" onclick="submitComment('${discussion.id}')">Post Comment</button>
-                </div>
-                <div id="comments-list-${discussion.id}" class="comments-list"></div>
-            </div>
-        </article>
-    `;
+            <div id="comments-list-${discussion.id}" class="comments-list"></div>
+        </div>
+    </article>`;
 }
 
-// Initialize discussions page
 async function initDiscussions() {
     const container = document.getElementById('discussionsList');
     if (!container) return;
-    
     container.innerHTML = '<p style="text-align: center; padding: 2rem;">Loading discussions...</p>';
-    
     try {
         const discussions = await loadDiscussions();
-        
         if (discussions.length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 3rem;">No discussions yet. Be the first to start one!</p>';
+            container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 3rem;">No discussions yet. Be the first!</p>';
             return;
         }
-        
         container.innerHTML = discussions.map(renderDiscussionPost).join('');
-        
     } catch (error) {
         console.error('Error loading discussions:', error);
         container.innerHTML = '<p style="text-align: center; color: var(--error);">Error loading discussions.</p>';
     }
 }
 
-// Event listeners for discussions
 document.getElementById('submitDiscussionBtn')?.addEventListener('click', async () => {
     const title = document.getElementById('discussionTitle').value.trim();
     const content = document.getElementById('discussionContent').value.trim();
     const userName = document.getElementById('discussionUserName').value.trim();
     const githubLink = document.getElementById('discussionGitHubLink').value.trim();
     const imageInput = document.getElementById('discussionImages');
-    const images = imageInput.files;
     
-    if (!title || !content || !userName) {
-        alert('Please fill in all required fields');
-        return;
-    }
+    if (!title || !content || !userName) { alert('Please fill in all required fields'); return; }
     
     const btn = document.getElementById('submitDiscussionBtn');
-    btn.innerText = 'Posting...';
-    btn.disabled = true;
+    btn.innerText = 'Posting...'; btn.disabled = true;
     
     try {
-        await createDiscussion(title, content, userName, githubLink, images);
+        await createDiscussion(title, content, userName, githubLink, imageInput.files);
         alert('Discussion posted!');
-        
-        // Reset form
         document.getElementById('discussionTitle').value = '';
         document.getElementById('discussionContent').value = '';
         document.getElementById('discussionUserName').value = '';
         document.getElementById('discussionGitHubLink').value = '';
         imageInput.value = '';
-        
-        // Reload discussions
         await initDiscussions();
-        
     } catch (error) {
         alert('Error posting discussion: ' + error.message);
     } finally {
-        btn.innerText = 'Post Discussion';
-        btn.disabled = false;
+        btn.innerText = 'Post Discussion'; btn.disabled = false;
     }
 });
 
-// Update navigation to include discussions
-function navigateTo(pageId) {
-    const idMap = {
-        'dashboard': 'page-dashboard',
-        'download': 'page-download',
-        'reviews': 'page-reviews',
-        'bug': 'page-bug',
-        'discussions': 'page-discussions'
-    };
-    
-    const targetId = idMap[pageId] || 'page-dashboard';
-    
-    pages.forEach(page => page.classList.remove('active'));
-    navLinks.forEach(link => link.classList.remove('active'));
-    
-    const targetPage = document.getElementById(targetId);
-    if (targetPage) targetPage.classList.add('active');
-    
-    const activeLink = document.querySelector(`.nav-link[href="#${pageId}"]`);
-    if (activeLink) activeLink.classList.add('active');
-    
-    history.pushState({ page: pageId }, '', `#${pageId}`);
-    
-    if (pageId === 'dashboard') setTimeout(drawChart, 100);
-    if (pageId === 'reviews') loadReviews();
-    if (pageId === 'discussions') initDiscussions();
-    
-    window.scrollTo(0, 0);
+// Placeholder functions for discussion actions (to prevent console errors)
+window.deleteDiscussion = async (id) => {
+    if(confirm('Delete this discussion?')) {
+        await supabase.from('discussions').delete().eq('id', id);
+        initDiscussions();
+    }
+};
+window.repostDiscussion = (id) => alert('Repost feature coming soon!');
+window.toggleComments = (id) => {
+    const el = document.getElementById(`comments-${id}`);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+};
+window.submitComment = (id) => alert('Comments feature coming soon!');
+
+// ============================================
+// 8. UTILS & INIT
+// ============================================
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderDownloads();
+    renderDashboard();
+    const hash = window.location.hash.substring(1);
+    navigateTo(hash || 'dashboard');
+});
