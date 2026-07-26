@@ -1,3 +1,5 @@
+const SUPABASE_URL = 'https://pmpvchacduibmciylhni.supabase.co'
+const SUPABASE_ANON_KEY = 'sb_publishable_izSgbuQ0uXigeBJIGfSL0g_ezAivfLI'
 // --- 1. MOCK DATA ---
 const vibifiyData = {
     stats: { projects: 12, downloads: 45230, contributors: 38 },
