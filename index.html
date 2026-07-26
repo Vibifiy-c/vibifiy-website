@@ -5,12 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vibifiy | Open Source Dashboard</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Defer loading of JS to ensure it runs after HTML parses -->
     <script type="module" src="main.js" defer></script>
 </head>
 <body>
     <nav class="navbar">
-        <div class="logo">⚡ Vibifiy Dashboard</div>
+        <div class="logo"> Vibifiy</div>
+        <div class="nav-links">
+            <a href="#dashboard" class="nav-link active">Dashboard</a>
+            <a href="#download" class="nav-link">Download</a>
+            <a href="#reviews" class="nav-link">Reviews</a>
+            <a href="#bug" class="nav-link">Bug Report</a>
+        </div>
         <div class="controls">
             <input type="text" id="searchInput" placeholder="Search projects..." aria-label="Search projects">
             <button id="themeToggle" aria-label="Toggle dark mode">🌙</button>
@@ -18,22 +23,69 @@
     </nav>
 
     <main class="dashboard">
-        <!-- Stats Row: Populated by JS -->
-        <section class="stats-grid" id="statsGrid">
-            <!-- JS will inject: Total Projects, Total Downloads, Active Contributors -->
+        <!-- PAGE 1: DASHBOARD -->
+        <section id="page-dashboard" class="page active">
+            <section class="stats-grid" id="statsGrid"></section>
+            <section class="chart-container">
+                <h2>Download Trends (Last 7 Days)</h2>
+                <canvas id="downloadChart"></canvas>
+            </section>
+            <section class="projects-section">
+                <h2>Open Source Projects</h2>
+                <div id="projectsList" class="projects-grid"></div>
+            </section>
         </section>
 
-        <!-- Chart Section: Drawn by JS Canvas API -->
-        <section class="chart-container">
-            <h2>Download Trends (Last 7 Days)</h2>
-            <canvas id="downloadChart"></canvas>
+        <!-- PAGE 2: DOWNLOAD -->
+        <section id="page-download" class="page">
+            <div class="content-box">
+                <h1>Download Vibifiy</h1>
+                <p>Get the latest version of Vibifiy and its plugins.</p>
+                <div class="download-options" id="downloadOptions"></div>
+            </div>
         </section>
 
-        <!-- Projects List: Rendered dynamically by JS -->
-        <section class="projects-section">
-            <h2>Open Source Projects</h2>
-            <div id="projectsList" class="projects-grid">
-                <!-- JS will inject project cards here -->
+        <!-- PAGE 3: REVIEWS -->
+        <section id="page-reviews" class="page">
+            <div class="content-box">
+                <h1>Community Reviews</h1>
+                <p>See what developers are saying about Vibifiy.</p>
+                
+                <div class="form-container">
+                    <h3>Leave a Review</h3>
+                    <form id="reviewForm">
+                        <input type="text" id="reviewName" placeholder="Your Name" required>
+                        <div class="star-rating" id="starRating">
+                            <span data-value="1">★</span><span data-value="2">★</span><span data-value="3">★</span><span data-value="4">★</span><span data-value="5">★</span>
+                        </div>
+                        <textarea id="reviewText" placeholder="Share your experience..." required></textarea>
+                        <button type="submit" class="btn-primary">Submit Review</button>
+                    </form>
+                </div>
+                <div id="reviewsList" class="reviews-grid"></div>
+            </div>
+        </section>
+
+        <!-- PAGE 4: BUG REPORT -->
+        <section id="page-bug" class="page">
+            <div class="content-box">
+                <h1>Report a Bug</h1>
+                <p>Help us improve Vibifiy by reporting issues.</p>
+                <div class="form-container">
+                    <form id="bugForm">
+                        <div class="input-group">
+                            <label>Bug Title</label>
+                            <input type="text" id="bugTitle" required>
+                            <span class="error-msg">Title is required</span>
+                        </div>
+                        <div class="input-group">
+                            <label>Description</label>
+                            <textarea id="bugDesc" required></textarea>
+                            <span class="error-msg">Description is required</span>
+                        </div>
+                        <button type="submit" class="btn-primary" id="submitBugBtn">Report Bug</button>
+                    </form>
+                </div>
             </div>
         </section>
     </main>
