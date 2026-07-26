@@ -403,3 +403,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const hash = window.location.hash.substring(1);
     navigateTo(hash || 'dashboard');
 });
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderDownloads(); // Keep this for the download page
+    renderDashboard(); // NEW: Fetch and render live GitHub data
+    
+    const hash = window.location.hash.substring(1);
+    navigateTo(hash || 'dashboard');
+});
