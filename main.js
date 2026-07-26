@@ -308,3 +308,372 @@ document.addEventListener('DOMContentLoaded', () => {
     const hash = window.location.hash.substring(1);
     navigateTo(hash || 'dashboard');
 });
+
+// ============================================
+// 8. DISCUSSIONS SYSTEM
+// ============================================
+
+// Generate or get user ID (browser fingerprint)
+function getUserId() {
+    let userId = localStorage.getItem('vibifiy_user_id');
+    if (!userId) {
+        userId = 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+        localStorage.setItem('vibifiy_user_id', userId);
+    }
+    return userId;
+}
+
+// Fetch GitHub repo data for link cards
+async function fetchGitHubRepoData(url) {
+    try {
+        const match = url.match(/github\.com\/([^/]+)\/([^/]+)/);
+        if (!match) return null;
+        
+        const [, owner, repo] = match;
+        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
+        if (!response.ok) return null;
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching GitHub data:', error);
+        return null;
+    }
+}
+
+// Upload images to Supabase storage
+async function uploadDiscussionImages(files, discussionId) {
+    const uploadPromises = Array.from(files).map(async (file) => {
+        if (file.size > 5 * 1024 * 1024) {
+            throw new Error(`File ${file.name} exceeds 5MB limit`);
+        }
+        
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${discussionId}_${Date.now()}_${file.name}`;
+        
+        const { error: uploadError } = await supabase.storage
+            .from('discussion-images')
+            .upload(fileName, file, { cacheControl: '3600', upsert: false });
+        
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+            .from('discussion-images')
+            .getPublicUrl(fileName);
+        
+        return { name: file.name, url: publicUrl };
+    });
+    
+    return await Promise.all(uploadPromises);
+}
+
+// Create discussion post
+async function createDiscussion(title, content, userName, githubLink, images = []) {
+    const userId = getUserId();
+    let imageData = [];
+    
+    // Upload images if any
+    if (images.length > 0) {
+        const tempId = 'temp_' + Date.now();
+        imageData = await uploadDiscussionImages(images, tempId);
+    }
+    
+    // Fetch GitHub data if link provided
+    let githubData = null;
+    if (githubLink) {
+        githubData = await fetchGitHubRepoData(githubLink);
+    }
+    
+    const { data, error } = await supabase
+        .from('discussions')
+        .insert([{
+            user_name: userName,
+            user_id: userId,
+            title,
+            content,
+            images: imageData,
+            github_link: githubLink
+        }])
+        .select();
+    
+    if (error) throw error;
+    return data[0];
+}
+
+// Fetch all discussions
+async function loadDiscussions() {
+    const { data: discussions, error } = await supabase
+        .from('discussions')
+        .select(`
+            *,
+            reposts (count),
+            comments (count)
+        `)
+        .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return discussions || [];
+}
+
+// Create comment
+async function createComment(discussionId, content, userName, parentCommentId = null, images = []) {
+    const userId = getUserId();
+    let imageData = [];
+    
+    if (images.length > 0) {
+        const tempId = 'temp_' + Date.now();
+        imageData = await uploadDiscussionImages(images, tempId);
+    }
+    
+    const { data, error } = await supabase
+        .from('comments')
+        .insert([{
+            discussion_id: discussionId,
+            parent_comment_id: parentCommentId,
+            user_name: userName,
+            user_id: userId,
+            content,
+            images: imageData
+        }])
+        .select();
+    
+    if (error) throw error;
+    return data[0];
+}
+
+// Fetch comments for a discussion
+async function loadComments(discussionId) {
+    const { data: comments, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('discussion_id', discussionId)
+        .order('created_at', { ascending: true });
+    
+    if (error) throw error;
+    return comments || [];
+}
+
+// Repost a discussion
+async function repostDiscussion(discussionId) {
+    const userId = getUserId();
+    
+    const { error } = await supabase
+        .from('reposts')
+        .insert([{
+            user_id: userId,
+            discussion_id: discussionId
+        }]);
+    
+    if (error) throw error;
+}
+
+// Delete discussion
+async function deleteDiscussion(discussionId) {
+    const userId = getUserId();
+    
+    // Verify ownership
+    const { data: discussion } = await supabase
+        .from('discussions')
+        .select('user_id')
+        .eq('id', discussionId)
+        .single();
+    
+    if (discussion.user_id !== userId) {
+        throw new Error('You can only delete your own discussions');
+    }
+    
+    const { error } = await supabase
+        .from('discussions')
+        .delete()
+        .eq('id', discussionId);
+    
+    if (error) throw error;
+}
+
+// Render GitHub link card
+function renderGitHubCard(repoData) {
+    if (!repoData) return '';
+    
+    return `
+        <div class="github-link-card">
+            <div class="github-card-header">
+                <img src="${repoData.owner.avatar_url}" alt="${repoData.owner.login}" class="github-avatar">
+                <div>
+                    <h4>${repoData.name}</h4>
+                    <p>${repoData.owner.login}</p>
+                </div>
+            </div>
+            <p class="github-description">${repoData.description || 'No description'}</p>
+            <div class="github-stats">
+                <span>⭐ ${repoData.stargazers_count}</span>
+                <span>🍴 ${repoData.forks_count}</span>
+                <span>🔔 ${repoData.watchers_count}</span>
+            </div>
+            <a href="${repoData.html_url}" target="_blank" class="github-link">View on GitHub ↗</a>
+        </div>
+    `;
+}
+
+// Render discussion post
+function renderDiscussionPost(discussion) {
+    const currentUserId = getUserId();
+    const isOwner = discussion.user_id === currentUserId;
+    const date = new Date(discussion.created_at).toLocaleDateString();
+    
+    let imagesHtml = '';
+    if (discussion.images && discussion.images.length > 0) {
+        imagesHtml = `<div class="discussion-images">${discussion.images.map(img => `
+            <img src="${img.url}" alt="${img.name}" class="discussion-image">
+        `).join('')}</div>`;
+    }
+    
+    let githubCardHtml = '';
+    if (discussion.github_link) {
+        // We'll fetch and render GitHub data asynchronously
+        fetchGitHubRepoData(discussion.github_link).then(repoData => {
+            if (repoData) {
+                const cardContainer = document.querySelector(`[data-discussion-id="${discussion.id}"] .github-card-container`);
+                if (cardContainer) {
+                    cardContainer.innerHTML = renderGitHubCard(repoData);
+                }
+            }
+        });
+        githubCardHtml = `<div class="github-card-container" data-discussion-id="${discussion.id}"><div class="loading-github">Loading GitHub preview...</div></div>`;
+    }
+    
+    return `
+        <article class="discussion-card" data-discussion-id="${discussion.id}">
+            <div class="discussion-header">
+                <div class="discussion-author">
+                    <div class="author-avatar">${discussion.user_name.charAt(0).toUpperCase()}</div>
+                    <div>
+                        <h4>${discussion.user_name}</h4>
+                        <span class="discussion-date">${date}</span>
+                    </div>
+                </div>
+                ${isOwner ? `
+                    <div class="discussion-actions">
+                        <button class="btn-icon" onclick="editDiscussion('${discussion.id}')">✏️</button>
+                        <button class="btn-icon" onclick="deleteDiscussion('${discussion.id}')">🗑️</button>
+                    </div>
+                ` : ''}
+            </div>
+            
+            <h3 class="discussion-title">${discussion.title}</h3>
+            <div class="discussion-content">${discussion.content}</div>
+            
+            ${imagesHtml}
+            ${githubCardHtml}
+            
+            <div class="discussion-footer">
+                <button class="discussion-action-btn" onclick="repostDiscussion('${discussion.id}')">
+                    🔁 Repost
+                </button>
+                <button class="discussion-action-btn" onclick="toggleComments('${discussion.id}')">
+                    💬 Comments (${discussion.comments?.[0]?.count || 0})
+                </button>
+            </div>
+            
+            <div id="comments-${discussion.id}" class="comments-section" style="display: none;">
+                <div class="comment-form">
+                    <input type="text" id="comment-name-${discussion.id}" placeholder="Your name">
+                    <textarea id="comment-text-${discussion.id}" placeholder="Write a comment..."></textarea>
+                    <button class="btn-primary" onclick="submitComment('${discussion.id}')">Post Comment</button>
+                </div>
+                <div id="comments-list-${discussion.id}" class="comments-list"></div>
+            </div>
+        </article>
+    `;
+}
+
+// Initialize discussions page
+async function initDiscussions() {
+    const container = document.getElementById('discussionsList');
+    if (!container) return;
+    
+    container.innerHTML = '<p style="text-align: center; padding: 2rem;">Loading discussions...</p>';
+    
+    try {
+        const discussions = await loadDiscussions();
+        
+        if (discussions.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 3rem;">No discussions yet. Be the first to start one!</p>';
+            return;
+        }
+        
+        container.innerHTML = discussions.map(renderDiscussionPost).join('');
+        
+    } catch (error) {
+        console.error('Error loading discussions:', error);
+        container.innerHTML = '<p style="text-align: center; color: var(--error);">Error loading discussions.</p>';
+    }
+}
+
+// Event listeners for discussions
+document.getElementById('submitDiscussionBtn')?.addEventListener('click', async () => {
+    const title = document.getElementById('discussionTitle').value.trim();
+    const content = document.getElementById('discussionContent').value.trim();
+    const userName = document.getElementById('discussionUserName').value.trim();
+    const githubLink = document.getElementById('discussionGitHubLink').value.trim();
+    const imageInput = document.getElementById('discussionImages');
+    const images = imageInput.files;
+    
+    if (!title || !content || !userName) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    const btn = document.getElementById('submitDiscussionBtn');
+    btn.innerText = 'Posting...';
+    btn.disabled = true;
+    
+    try {
+        await createDiscussion(title, content, userName, githubLink, images);
+        alert('Discussion posted!');
+        
+        // Reset form
+        document.getElementById('discussionTitle').value = '';
+        document.getElementById('discussionContent').value = '';
+        document.getElementById('discussionUserName').value = '';
+        document.getElementById('discussionGitHubLink').value = '';
+        imageInput.value = '';
+        
+        // Reload discussions
+        await initDiscussions();
+        
+    } catch (error) {
+        alert('Error posting discussion: ' + error.message);
+    } finally {
+        btn.innerText = 'Post Discussion';
+        btn.disabled = false;
+    }
+});
+
+// Update navigation to include discussions
+function navigateTo(pageId) {
+    const idMap = {
+        'dashboard': 'page-dashboard',
+        'download': 'page-download',
+        'reviews': 'page-reviews',
+        'bug': 'page-bug',
+        'discussions': 'page-discussions'
+    };
+    
+    const targetId = idMap[pageId] || 'page-dashboard';
+    
+    pages.forEach(page => page.classList.remove('active'));
+    navLinks.forEach(link => link.classList.remove('active'));
+    
+    const targetPage = document.getElementById(targetId);
+    if (targetPage) targetPage.classList.add('active');
+    
+    const activeLink = document.querySelector(`.nav-link[href="#${pageId}"]`);
+    if (activeLink) activeLink.classList.add('active');
+    
+    history.pushState({ page: pageId }, '', `#${pageId}`);
+    
+    if (pageId === 'dashboard') setTimeout(drawChart, 100);
+    if (pageId === 'reviews') loadReviews();
+    if (pageId === 'discussions') initDiscussions();
+    
+    window.scrollTo(0, 0);
+}
