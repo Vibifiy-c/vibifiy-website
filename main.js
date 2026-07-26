@@ -9,23 +9,105 @@ const SUPABASE_ANON_KEY = 'sb_publishable_izSgbuQ0uXigeBJIGfSL0g_ezAivfLI' // Re
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 // ============================================
-// 2. MOCK DATA
+// 2. LIVE GITHUB API INTEGRATION
 // ============================================
-const vibifiyData = {
-    stats: { projects: 12, downloads: 45230, contributors: 38 },
-    chartData: [120, 190, 150, 250, 220, 300, 350],
-    projects: [
-        { name: "vibifiy-core", desc: "The core engine for Vibifiy applications.", downloads: 15400, stars: 342, lang: "JavaScript" },
-        { name: "vibifiy-cli", desc: "Command line interface for rapid scaffolding.", downloads: 8900, stars: 128, lang: "TypeScript" },
-        { name: "vibifiy-ui", desc: "Lightweight, accessible UI components.", downloads: 12100, stars: 215, lang: "JavaScript" }
-    ],
-    downloads: [
-        { name: "VibiClaw", version: "v2.4.0", description: "Advanced code editor.", size: "12.4 MB", downloads: 15420, license: "MIT" },
-        { name: "Vibrium", version: "v1.8.3", description: "High-performance runtime.", size: "8.7 MB", downloads: 12890, license: "Apache 2.0" },
-        { name: "Vibipass", version: "v3.1.0", description: "Secure password manager.", size: "5.2 MB", downloads: 16920, license: "GPL-3.0" }
-    ]
-};
+const GITHUB_ORG = 'Vibifiy-c';
 
+async function fetchGitHubData() {
+    try {
+        // Try fetching as an Organization first
+        let response = await fetch(`https://api.github.com/orgs/${GITHUB_ORG}/repos?sort=updated&direction=desc`);
+        
+        // Fallback: If it's actually a User account, not an Org, try the user endpoint
+        if (!response.ok) {
+            response = await fetch(`https://api.github.com/users/${GITHUB_ORG}/repos?sort=updated&direction=desc`);
+        }
+        
+        if (!response.ok) throw new Error('Failed to fetch repositories');
+        
+        const repos = await response.json();
+        
+        // Calculate total stats
+        const totalStars = repos.reduce((sum, repo) => sum + repo.stargazers_count, 0);
+        const totalForks = repos.reduce((sum, repo) => sum + repo.forks_count, 0);
+        
+        return { repos, totalStars, totalForks, totalCount: repos.length };
+    } catch (error) {
+        console.error('Error fetching GitHub data:', error);
+        return null;
+    }
+}
+
+async function renderDashboard() {
+    const projectsList = document.getElementById('projectsList');
+    const orgStats = document.getElementById('orgStats');
+    
+    if (!projectsList || !orgStats) return;
+
+    const data = await fetchGitHubData();
+
+    if (!data || data.repos.length === 0) {
+        projectsList.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">Unable to load projects from GitHub.</p>
+                <a href="https://github.com/${GITHUB_ORG}" target="_blank" class="btn-primary" style="width: auto; display: inline-block;">View on GitHub directly</a>
+            </div>`;
+        return;
+    }
+
+    // Render Stats
+    orgStats.innerHTML = `
+        <div class="stat-card">
+            <h3>Total Projects</h3>
+            <div class="value">${data.totalCount}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Total Stars</h3>
+            <div class="value">${data.totalStars.toLocaleString()}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Total Forks</h3>
+            <div class="value">${data.totalForks.toLocaleString()}</div>
+        </div>
+    `;
+
+    // Render Projects Grid
+    projectsList.innerHTML = data.repos.map(repo => `
+        <article class="project-card">
+            <div class="project-header">
+                <h3>${repo.name}</h3>
+                ${repo.private ? '<span class="badge" style="background: var(--text-secondary);">Private</span>' : '<span class="badge">Public</span>'}
+            </div>
+            <p class="project-desc">${repo.description || 'No description provided.'}</p>
+            <div class="project-meta">
+                <span class="lang-badge">
+                    <span class="lang-dot" style="background-color: ${getLanguageColor(repo.language)}"></span>
+                    ${repo.language || 'Unknown'}
+                </span>
+                <span>⭐ ${repo.stargazers_count}</span>
+                <span>🍴 ${repo.forks_count}</span>
+            </div>
+            <a href="${repo.html_url}" target="_blank" class="project-link">View on GitHub ↗</a>
+        </article>
+    `).join('');
+}
+
+// Helper: GitHub language colors
+function getLanguageColor(lang) {
+    const colors = {
+        'JavaScript': '#f1e05a',
+        'TypeScript': '#3178c6',
+        'HTML': '#e34c26',
+        'CSS': '#563d7c',
+        'Python': '#3572A5',
+        'Java': '#b07219',
+        'C++': '#f34b7d',
+        'Go': '#00ADD8',
+        'Rust': '#dea584',
+        'Shell': '#89e051'
+    };
+    return colors[lang] || '#8b949e';
+}
 // ============================================
 // 3. THEME & NAVIGATION (FIXED)
 // ============================================
