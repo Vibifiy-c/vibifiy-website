@@ -604,4 +604,4 @@ document.getElementById('profileForm')?.addEventListener('submit', async (e) => 
     }
 });
 
-// Navigation already updated above - this duplicate removed
+// Make sure there is NO second navigateTo function below this point
