@@ -3,15 +3,13 @@
 // ============================================
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
 
-// 👇 PASTE YOUR ACTUAL CREDENTIALS HERE 👇
 const SUPABASE_URL = 'https://pmpvchacduibmciylhni.supabase.co'
-const SUPABASE_ANON_KEY = 'sb_publishable_izSgbuQ0uXigeBJIGfSL0g_ezAivfLI' 
-// 👆 PASTE YOUR ACTUAL CREDENTIALS HERE 
+const SUPABASE_ANON_KEY = 'sb_publishable_izSgbuQ0uXigeBJIGfSL0g_ezAivfLI' // Replace if needed
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 // ============================================
-// 2. MOCK DATA (For Dashboard)
+// 2. MOCK DATA
 // ============================================
 const vibifiyData = {
     stats: { projects: 12, downloads: 45230, contributors: 38 },
@@ -29,7 +27,7 @@ const vibifiyData = {
 };
 
 // ============================================
-// 3. THEME & NAVIGATION
+// 3. THEME & NAVIGATION (FIXED)
 // ============================================
 const themeToggle = document.getElementById('themeToggle');
 const savedTheme = localStorage.getItem('vibifiy-theme') || 'light';
@@ -48,20 +46,29 @@ const navLinks = document.querySelectorAll('.nav-link');
 const pages = document.querySelectorAll('.page');
 
 function navigateTo(pageId) {
+    // Map the URL hash to the actual HTML element ID
+    const idMap = {
+        'dashboard': 'page-dashboard',
+        'download': 'page-download',
+        'reviews': 'page-reviews',
+        'bug': 'page-bug'
+    };
+    
+    const targetId = idMap[pageId] || 'page-dashboard';
+    
     pages.forEach(page => page.classList.remove('active'));
     navLinks.forEach(link => link.classList.remove('active'));
     
-    const targetPage = document.getElementById(pageId);
+    const targetPage = document.getElementById(targetId);
     if (targetPage) targetPage.classList.add('active');
     
-    const activeLink = document.querySelector(`.nav-link[data-page="${pageId}"]`);
+    const activeLink = document.querySelector(`.nav-link[href="#${pageId}"]`);
     if (activeLink) activeLink.classList.add('active');
     
     history.pushState({ page: pageId }, '', `#${pageId}`);
     
     if (pageId === 'dashboard') setTimeout(drawChart, 100);
-    if (pageId === 'reviews') loadReviews(); // Fetch from Supabase!
-    if (pageId === 'bug') loadBugReports();   // Fetch from Supabase!
+    if (pageId === 'reviews') loadReviews();
     
     window.scrollTo(0, 0);
 }
@@ -69,11 +76,12 @@ function navigateTo(pageId) {
 navLinks.forEach(link => {
     link.addEventListener('click', (e) => {
         e.preventDefault();
-        navigateTo(link.getAttribute('data-page'));
+        const pageId = link.getAttribute('href').substring(1); // Gets 'dashboard', 'download', etc.
+        navigateTo(pageId);
     });
 });
 
-window.addEventListener('popstate', (e) => {
+window.addEventListener('popstate', () => {
     const hash = window.location.hash.substring(1);
     navigateTo(hash || 'dashboard');
 });
@@ -104,7 +112,7 @@ function renderProjects(filterText = '') {
     projectsList.innerHTML = filtered.length ? filtered.map(p => `
         <article class="project-card">
             <h3>${p.name}</h3><p>${p.desc}</p>
-            <div class="project-meta"><span>⭐ ${p.stars}</span><span>️ ${p.downloads.toLocaleString()}</span><span class="badge">${p.lang}</span></div>
+            <div class="project-meta"><span>⭐ ${p.stars}</span><span>⬇️ ${p.downloads.toLocaleString()}</span><span class="badge">${p.lang}</span></div>
         </article>
     `).join('') : '<p style="grid-column: 1/-1; text-align: center;">No projects found.</p>';
 }
@@ -162,21 +170,16 @@ function drawChart() {
 }
 
 function renderDownloads() {
-    const container = document.getElementById('downloadCards');
+    const container = document.getElementById('downloadOptions'); // FIXED ID
     if (!container) return;
     container.innerHTML = vibifiyData.downloads.map(product => `
-        <div class="download-card">
-            <div class="download-card-header"><h3>${product.name}</h3><span class="version">${product.version}</span></div>
-            <div class="download-card-body">
-                <p>${product.description}</p>
-                <div class="download-info">
-                    <div class="info-item"><label>Size</label><span>${product.size}</span></div>
-                    <div class="info-item"><label>Downloads</label><span>${product.downloads.toLocaleString()}</span></div>
-                    <div class="info-item"><label>License</label><span>${product.license}</span></div>
-                </div>
-                <a href="#" class="download-btn" onclick="alert('Download starting for ${product.name}!'); return false;">Download Now</a>
-            </div>
-        </div>
+        <a href="#" class="download-btn" onclick="alert('Download starting for ${product.name}!'); return false;">
+            <span>
+                <strong>${product.name}</strong><br>
+                <small style="color: var(--text-secondary);">${product.version} • ${product.license}</small>
+            </span>
+            <span style="font-weight: 600; color: var(--accent);">Download ⬇️</span>
+        </a>
     `).join('');
 }
 
@@ -199,19 +202,15 @@ document.getElementById('starRating')?.addEventListener('mouseleave', () => {
     stars.forEach((s, i) => s.classList.toggle('active', i < selectedRating));
 });
 
-// Fetch reviews from Supabase Server
 async function loadReviews() {
     const container = document.getElementById('reviewsList');
     if (!container) return;
     container.innerHTML = '<p style="text-align: center;">Loading reviews from server...</p>';
 
-    const { data: reviews, error } = await supabase
-        .from('reviews')
-        .select('*')
-        .order('created_at', { ascending: false });
+    const { data: reviews, error } = await supabase.from('reviews').select('*').order('created_at', { ascending: false });
 
     if (error) {
-        container.innerHTML = '<p style="text-align: center; color: red;">Error loading reviews.</p>';
+        container.innerHTML = '<p style="text-align: center; color: var(--error);">Error loading reviews.</p>';
         return;
     }
 
@@ -236,7 +235,6 @@ async function loadReviews() {
     }).join('');
 }
 
-// Submit review to Supabase Server
 document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (selectedRating === 0) { alert('Please select a star rating!'); return; }
@@ -245,14 +243,14 @@ document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
     const text = document.getElementById('reviewText').value;
     const btn = e.target.querySelector('button');
     
-    btn.innerText = 'Submitting to server...'; btn.disabled = true;
+    btn.innerText = 'Submitting...'; btn.disabled = true;
 
     const { error } = await supabase.from('reviews').insert([{ name, rating: selectedRating, text }]);
 
     if (error) {
         alert('Error: ' + error.message);
     } else {
-        alert('Review saved to the cloud!');
+        alert('Review saved to the cloud! ☁️');
         e.target.reset();
         selectedRating = 0;
         stars.forEach(s => s.classList.remove('active'));
@@ -274,44 +272,14 @@ function validateField(field) {
 bugTitle?.addEventListener('input', () => validateField(bugTitle));
 bugDesc?.addEventListener('input', () => validateField(bugDesc));
 
-async function loadBugReports() {
-    const container = document.getElementById('bugReportsList');
-    if (!container) return;
-    container.innerHTML = '<p style="text-align: center;">Loading bug reports...</p>';
-
-    const { data: bugs, error } = await supabase
-        .from('bug_reports')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-    if (error || !bugs || bugs.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No bug reports yet.</p>';
-        return;
-    }
-
-    container.innerHTML = bugs.map(bug => {
-        const date = new Date(bug.created_at).toLocaleDateString();
-        return `
-            <div class="bug-report-card">
-                <div class="bug-header">
-                    <h4>${escapeHtml(bug.title)}</h4>
-                    <span class="badge severity">${bug.severity.toUpperCase()}</span>
-                </div>
-                <p class="bug-description">${escapeHtml(bug.description)}</p>
-                <span class="bug-date">${date}</span>
-            </div>
-        `;
-    }).join('');
-}
-
 document.getElementById('bugForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     validateField(bugTitle); validateField(bugDesc);
     if (bugTitle.classList.contains('error') || bugDesc.classList.contains('error')) return;
 
     const btn = document.getElementById('submitBugBtn');
-    btn.innerText = 'Submitting to server...'; btn.disabled = true;
+    const originalText = btn.innerText;
+    btn.innerText = 'Submitting...'; btn.disabled = true;
 
     const { error } = await supabase.from('bug_reports').insert([{
         title: bugTitle.value,
@@ -322,11 +290,10 @@ document.getElementById('bugForm')?.addEventListener('submit', async (e) => {
     if (error) {
         alert('Error: ' + error.message);
     } else {
-        alert('Bug report saved to the cloud!');
+        alert('Bug report saved to the cloud! 🐛');
         e.target.reset();
-        loadBugReports();
     }
-    btn.innerText = 'Submit Bug Report'; btn.disabled = false;
+    btn.innerText = originalText; btn.disabled = false;
 });
 
 // ============================================
@@ -339,7 +306,7 @@ function escapeHtml(text) {
 }
 
 document.getElementById('searchInput')?.addEventListener('input', (e) => renderProjects(e.target.value));
-window.addEventListener('resize', () => { if (document.getElementById('dashboard').classList.contains('active')) drawChart(); });
+window.addEventListener('resize', () => { if (document.getElementById('page-dashboard').classList.contains('active')) drawChart(); });
 
 document.addEventListener('DOMContentLoaded', () => {
     renderStats(); renderProjects(); renderDownloads(); drawChart();
