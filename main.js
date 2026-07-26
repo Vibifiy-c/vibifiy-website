@@ -1,101 +1,114 @@
+// ============================================
+// 1. SUPABASE CONFIGURATION
+// ============================================
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+// 👇 PASTE YOUR ACTUAL CREDENTIALS HERE 👇
 const SUPABASE_URL = 'https://pmpvchacduibmciylhni.supabase.co'
-const SUPABASE_ANON_KEY = 'sb_publishable_izSgbuQ0uXigeBJIGfSL0g_ezAivfLI'
-// --- 1. MOCK DATA ---
+const SUPABASE_ANON_KEY = 'sb_publishable_izSgbuQ0uXigeBJIGfSL0g_ezAivfLI' 
+// 👆 PASTE YOUR ACTUAL CREDENTIALS HERE 
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+// ============================================
+// 2. MOCK DATA (For Dashboard)
+// ============================================
 const vibifiyData = {
     stats: { projects: 12, downloads: 45230, contributors: 38 },
     chartData: [120, 190, 150, 250, 220, 300, 350],
     projects: [
         { name: "vibifiy-core", desc: "The core engine for Vibifiy applications.", downloads: 15400, stars: 342, lang: "JavaScript" },
         { name: "vibifiy-cli", desc: "Command line interface for rapid scaffolding.", downloads: 8900, stars: 128, lang: "TypeScript" },
-        { name: "vibifiy-ui", desc: "Lightweight, accessible UI components.", downloads: 12100, stars: 215, lang: "JavaScript" },
-        { name: "vibifiy-docs", desc: "Documentation site generator.", downloads: 4500, stars: 89, lang: "Markdown" },
-        { name: "vibifiy-plugin-auth", desc: "Authentication plugin for Vibifiy core.", downloads: 4330, stars: 76, lang: "JavaScript" }
+        { name: "vibifiy-ui", desc: "Lightweight, accessible UI components.", downloads: 12100, stars: 215, lang: "JavaScript" }
     ],
     downloads: [
-        { name: "Vibifiy Core (v2.4.0)", size: "12.4 MB", link: "#" },
-        { name: "Vibifiy CLI (v1.1.2)", size: "4.2 MB", link: "#" },
-        { name: "Vibifiy UI Kit (v3.0.0)", size: "8.7 MB", link: "#" }
+        { name: "VibiClaw", version: "v2.4.0", description: "Advanced code editor.", size: "12.4 MB", downloads: 15420, license: "MIT" },
+        { name: "Vibrium", version: "v1.8.3", description: "High-performance runtime.", size: "8.7 MB", downloads: 12890, license: "Apache 2.0" },
+        { name: "Vibipass", version: "v3.1.0", description: "Secure password manager.", size: "5.2 MB", downloads: 16920, license: "GPL-3.0" }
     ]
 };
 
-// --- 2. THEME MANAGEMENT ---
+// ============================================
+// 3. THEME & NAVIGATION
+// ============================================
 const themeToggle = document.getElementById('themeToggle');
 const savedTheme = localStorage.getItem('vibifiy-theme') || 'light';
 document.body.setAttribute('data-theme', savedTheme);
 themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
 
 themeToggle.addEventListener('click', () => {
-    const currentTheme = document.body.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    const newTheme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     document.body.setAttribute('data-theme', newTheme);
     localStorage.setItem('vibifiy-theme', newTheme);
     themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
     drawChart();
 });
 
-// --- 3. SPA ROUTING (JS-Heavy requirement!) ---
-const pages = document.querySelectorAll('.page');
 const navLinks = document.querySelectorAll('.nav-link');
+const pages = document.querySelectorAll('.page');
 
 function navigateTo(pageId) {
-    pages.forEach(p => p.classList.remove('active'));
-    navLinks.forEach(l => l.classList.remove('active'));
-
-    const targetPage = document.getElementById(`page-${pageId}`);
-    const targetLink = document.querySelector(`a[href="#${pageId}"]`);
-
-    if (targetPage) targetPage.classList.add('active');
-    if (targetLink) targetLink.classList.add('active');
+    pages.forEach(page => page.classList.remove('active'));
+    navLinks.forEach(link => link.classList.remove('active'));
     
-    // Re-render charts if returning to dashboard
-    if (pageId === 'dashboard') drawChart();
+    const targetPage = document.getElementById(pageId);
+    if (targetPage) targetPage.classList.add('active');
+    
+    const activeLink = document.querySelector(`.nav-link[data-page="${pageId}"]`);
+    if (activeLink) activeLink.classList.add('active');
+    
+    history.pushState({ page: pageId }, '', `#${pageId}`);
+    
+    if (pageId === 'dashboard') setTimeout(drawChart, 100);
+    if (pageId === 'reviews') loadReviews(); // Fetch from Supabase!
+    if (pageId === 'bug') loadBugReports();   // Fetch from Supabase!
+    
+    window.scrollTo(0, 0);
 }
 
 navLinks.forEach(link => {
     link.addEventListener('click', (e) => {
         e.preventDefault();
-        const pageId = link.getAttribute('href').substring(1);
-        history.pushState(null, '', `#${pageId}`);
-        navigateTo(pageId);
+        navigateTo(link.getAttribute('data-page'));
     });
 });
 
-window.addEventListener('popstate', () => {
-    const pageId = window.location.hash.substring(1) || 'dashboard';
-    navigateTo(pageId);
+window.addEventListener('popstate', (e) => {
+    const hash = window.location.hash.substring(1);
+    navigateTo(hash || 'dashboard');
 });
 
-// --- 4. DASHBOARD RENDERING ---
+// ============================================
+// 4. DASHBOARD FUNCTIONS
+// ============================================
 function renderStats() {
     const statsGrid = document.getElementById('statsGrid');
-    const stats = [
+    if (!statsGrid) return;
+    statsGrid.innerHTML = [
         { label: 'Total Projects', value: vibifiyData.stats.projects },
         { label: 'Total Downloads', value: vibifiyData.stats.downloads },
         { label: 'Contributors', value: vibifiyData.stats.contributors }
-    ];
-    statsGrid.innerHTML = stats.map(stat => `
-        <div class="stat-card"><h3>${stat.label}</h3><div class="value" data-target="${stat.value}">0</div></div>
+    ].map(stat => `
+        <div class="stat-card">
+            <h3>${stat.label}</h3>
+            <div class="value" data-target="${stat.value}">0</div>
+        </div>
     `).join('');
     animateCounters();
 }
 
 function renderProjects(filterText = '') {
     const projectsList = document.getElementById('projectsList');
+    if (!projectsList) return;
     const filtered = vibifiyData.projects.filter(p => p.name.toLowerCase().includes(filterText.toLowerCase()));
     projectsList.innerHTML = filtered.length ? filtered.map(p => `
-        <article class="project-card"><h3>${p.name}</h3><p>${p.desc}</p>
-        <div class="project-meta"><span>⭐ ${p.stars}</span><span>⬇️ ${p.downloads.toLocaleString()}</span><span class="badge">${p.lang}</span></div></article>
+        <article class="project-card">
+            <h3>${p.name}</h3><p>${p.desc}</p>
+            <div class="project-meta"><span>⭐ ${p.stars}</span><span>️ ${p.downloads.toLocaleString()}</span><span class="badge">${p.lang}</span></div>
+        </article>
     `).join('') : '<p style="grid-column: 1/-1; text-align: center;">No projects found.</p>';
 }
 
-function renderDownloads() {
-    const container = document.getElementById('downloadOptions');
-    container.innerHTML = vibifiyData.downloads.map(d => `
-        <a href="${d.link}" class="download-btn"><span><strong>${d.name}</strong><br><small>${d.size}</small></span><span>️ Download</span></a>
-    `).join('');
-}
-
-// --- 5. ANIMATED COUNTERS & CANVAS CHART ---
 function animateCounters() {
     document.querySelectorAll('.value').forEach(counter => {
         const target = +counter.getAttribute('data-target');
@@ -148,7 +161,28 @@ function drawChart() {
     });
 }
 
-// --- 6. REVIEWS PAGE LOGIC (LocalStorage + DOM) ---
+function renderDownloads() {
+    const container = document.getElementById('downloadCards');
+    if (!container) return;
+    container.innerHTML = vibifiyData.downloads.map(product => `
+        <div class="download-card">
+            <div class="download-card-header"><h3>${product.name}</h3><span class="version">${product.version}</span></div>
+            <div class="download-card-body">
+                <p>${product.description}</p>
+                <div class="download-info">
+                    <div class="info-item"><label>Size</label><span>${product.size}</span></div>
+                    <div class="info-item"><label>Downloads</label><span>${product.downloads.toLocaleString()}</span></div>
+                    <div class="info-item"><label>License</label><span>${product.license}</span></div>
+                </div>
+                <a href="#" class="download-btn" onclick="alert('Download starting for ${product.name}!'); return false;">Download Now</a>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ============================================
+// 5. SUPABASE: REVIEWS
+// ============================================
 let selectedRating = 0;
 const stars = document.querySelectorAll('#starRating span');
 stars.forEach(star => {
@@ -156,34 +190,80 @@ stars.forEach(star => {
         selectedRating = +star.getAttribute('data-value');
         stars.forEach((s, i) => s.classList.toggle('active', i < selectedRating));
     });
+    star.addEventListener('mouseenter', () => {
+        const value = +star.getAttribute('data-value');
+        stars.forEach((s, i) => s.classList.toggle('active', i < value));
+    });
+});
+document.getElementById('starRating')?.addEventListener('mouseleave', () => {
+    stars.forEach((s, i) => s.classList.toggle('active', i < selectedRating));
 });
 
-function renderReviews() {
-    const reviews = JSON.parse(localStorage.getItem('vibifiy-reviews') || '[]');
+// Fetch reviews from Supabase Server
+async function loadReviews() {
     const container = document.getElementById('reviewsList');
-    container.innerHTML = reviews.length ? reviews.map(r => `
-        <div class="review-card">
-            <div class="review-header"><span>${r.name}</span><span class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span></div>
-            <p>${r.text}</p>
-        </div>
-    `).join('') : '<p>No reviews yet. Be the first!</p>';
+    if (!container) return;
+    container.innerHTML = '<p style="text-align: center;">Loading reviews from server...</p>';
+
+    const { data: reviews, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        container.innerHTML = '<p style="text-align: center; color: red;">Error loading reviews.</p>';
+        return;
+    }
+
+    if (!reviews || reviews.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No reviews yet. Be the first!</p>';
+        return;
+    }
+
+    container.innerHTML = reviews.map(review => {
+        const date = new Date(review.created_at).toLocaleDateString();
+        const starsStr = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+        return `
+            <div class="review-card">
+                <div class="review-header">
+                    <h4>${escapeHtml(review.name)}</h4>
+                    <span class="review-stars">${starsStr}</span>
+                </div>
+                <p class="review-text">${escapeHtml(review.text)}</p>
+                <span class="review-date">${date}</span>
+            </div>
+        `;
+    }).join('');
 }
 
-document.getElementById('reviewForm').addEventListener('submit', (e) => {
+// Submit review to Supabase Server
+document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (selectedRating === 0) { alert('Please select a star rating!'); return; }
+    
     const name = document.getElementById('reviewName').value;
     const text = document.getElementById('reviewText').value;
-    const reviews = JSON.parse(localStorage.getItem('vibifiy-reviews') || '[]');
-    reviews.unshift({ name, rating: selectedRating, text });
-    localStorage.setItem('vibifiy-reviews', JSON.stringify(reviews));
-    e.target.reset();
-    selectedRating = 0; stars.forEach(s => s.classList.remove('active'));
-    renderReviews();
+    const btn = e.target.querySelector('button');
+    
+    btn.innerText = 'Submitting to server...'; btn.disabled = true;
+
+    const { error } = await supabase.from('reviews').insert([{ name, rating: selectedRating, text }]);
+
+    if (error) {
+        alert('Error: ' + error.message);
+    } else {
+        alert('Review saved to the cloud!');
+        e.target.reset();
+        selectedRating = 0;
+        stars.forEach(s => s.classList.remove('active'));
+        loadReviews();
+    }
+    btn.innerText = 'Submit Review'; btn.disabled = false;
 });
 
-// --- 7. BUG REPORT LOGIC (Real-time Validation) ---
-const bugForm = document.getElementById('bugForm');
+// ============================================
+// 6. SUPABASE: BUG REPORTS
+// ============================================
 const bugTitle = document.getElementById('bugTitle');
 const bugDesc = document.getElementById('bugDesc');
 
@@ -191,33 +271,78 @@ function validateField(field) {
     if (!field.value.trim()) field.classList.add('error');
     else field.classList.remove('error');
 }
+bugTitle?.addEventListener('input', () => validateField(bugTitle));
+bugDesc?.addEventListener('input', () => validateField(bugDesc));
 
-bugTitle.addEventListener('input', () => validateField(bugTitle));
-bugDesc.addEventListener('input', () => validateField(bugDesc));
+async function loadBugReports() {
+    const container = document.getElementById('bugReportsList');
+    if (!container) return;
+    container.innerHTML = '<p style="text-align: center;">Loading bug reports...</p>';
 
-bugForm.addEventListener('submit', (e) => {
+    const { data: bugs, error } = await supabase
+        .from('bug_reports')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+    if (error || !bugs || bugs.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No bug reports yet.</p>';
+        return;
+    }
+
+    container.innerHTML = bugs.map(bug => {
+        const date = new Date(bug.created_at).toLocaleDateString();
+        return `
+            <div class="bug-report-card">
+                <div class="bug-header">
+                    <h4>${escapeHtml(bug.title)}</h4>
+                    <span class="badge severity">${bug.severity.toUpperCase()}</span>
+                </div>
+                <p class="bug-description">${escapeHtml(bug.description)}</p>
+                <span class="bug-date">${date}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+document.getElementById('bugForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     validateField(bugTitle); validateField(bugDesc);
     if (bugTitle.classList.contains('error') || bugDesc.classList.contains('error')) return;
-    
+
     const btn = document.getElementById('submitBugBtn');
-    const originalText = btn.innerText;
-    btn.innerText = 'Submitting...'; btn.disabled = true;
-    
-    // Simulate API call
-    setTimeout(() => {
-        btn.innerText = 'Reported Successfully! ✓'; btn.style.background = 'var(--success)';
-        bugForm.reset();
-        setTimeout(() => { btn.innerText = originalText; btn.style.background = ''; btn.disabled = false; }, 3000);
-    }, 1500);
+    btn.innerText = 'Submitting to server...'; btn.disabled = true;
+
+    const { error } = await supabase.from('bug_reports').insert([{
+        title: bugTitle.value,
+        description: bugDesc.value,
+        severity: document.getElementById('bugSeverity').value
+    }]);
+
+    if (error) {
+        alert('Error: ' + error.message);
+    } else {
+        alert('Bug report saved to the cloud!');
+        e.target.reset();
+        loadBugReports();
+    }
+    btn.innerText = 'Submit Bug Report'; btn.disabled = false;
 });
 
-// --- 8. INITIALIZATION ---
-document.getElementById('searchInput').addEventListener('input', (e) => renderProjects(e.target.value));
-window.addEventListener('resize', drawChart);
+// ============================================
+// 7. UTILS & INIT
+// ============================================
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+document.getElementById('searchInput')?.addEventListener('input', (e) => renderProjects(e.target.value));
+window.addEventListener('resize', () => { if (document.getElementById('dashboard').classList.contains('active')) drawChart(); });
 
 document.addEventListener('DOMContentLoaded', () => {
-    const initialPage = window.location.hash.substring(1) || 'dashboard';
-    navigateTo(initialPage);
-    renderStats(); renderProjects(); renderDownloads(); renderReviews(); drawChart();
+    renderStats(); renderProjects(); renderDownloads(); drawChart();
+    const hash = window.location.hash.substring(1);
+    navigateTo(hash || 'dashboard');
 });
