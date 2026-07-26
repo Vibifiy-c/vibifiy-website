@@ -116,6 +116,7 @@ themeToggle.addEventListener('click', () => {
 const navLinks = document.querySelectorAll('.nav-link');
 const pages = document.querySelectorAll('.page');
 
+// Update navigation to include profile
 function navigateTo(pageId) {
     const idMap = {
         'dashboard': 'page-dashboard',
@@ -123,7 +124,8 @@ function navigateTo(pageId) {
         'reviews': 'page-reviews',
         'bug': 'page-bug',
         'discussions': 'page-discussions',
-        'profile': 'page-profile'
+        'profile': 'page-profile',
+        'profile-edit': 'profileEdit'
     };
     const targetId = idMap[pageId] || 'page-dashboard';
     
@@ -556,7 +558,7 @@ function renderMarkdown(text) {
         .replace(/\n/g, '<br>');
 }
 
-// Edit profile modal
+// Edit profile - GitHub style (navigate to edit page)
 document.getElementById('editProfileBtn')?.addEventListener('click', async () => {
     const profile = await getOrCreateProfile();
     
@@ -568,12 +570,8 @@ document.getElementById('editProfileBtn')?.addEventListener('click', async () =>
     document.getElementById('editTwitter').value = profile.twitter_url || '';
     document.getElementById('editLinkedin').value = profile.linkedin_url || '';
     
-    document.getElementById('profileModal').style.display = 'flex';
+    navigateTo('profile-edit');
 });
-
-function closeProfileModal() {
-    document.getElementById('profileModal').style.display = 'none';
-}
 
 document.getElementById('profileForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();

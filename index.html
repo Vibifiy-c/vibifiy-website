@@ -23,7 +23,7 @@
             <a href="#discussions" class="nav-link">Discussions</a>
             <a href="#profile" class="nav-link">Profile</a>
         </div>
-        
+
         <div class="controls">
             <input type="text" id="searchInput" placeholder="Search projects..." aria-label="Search projects">
             <button id="themeToggle" aria-label="Toggle dark mode">🌙</button>
@@ -196,14 +196,13 @@
             </div>
         </section>
 
-        <!-- PROFILE EDIT MODAL -->
-        <div id="profileModal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Edit Profile</h2>
-                    <button class="modal-close" onclick="closeProfileModal()">×</button>
-                </div>
-                <div class="modal-body">
+        <!-- PROFILE EDIT SECTION (GitHub-style inline editing) -->
+        <section id="profileEdit" class="page" style="display: none;">
+            <div class="profile-container">
+                <div class="profile-header-card">
+                    <h1>Edit Profile</h1>
+                    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Update your public profile information</p>
+                    
                     <form id="profileForm">
                         <div class="form-group">
                             <label>Display Name</label>
@@ -212,10 +211,11 @@
                         <div class="form-group">
                             <label>Username</label>
                             <input type="text" id="editUsername" required placeholder="username">
+                            <small style="color: var(--text-secondary);">This will be your public username</small>
                         </div>
                         <div class="form-group">
                             <label>Bio (Markdown supported)</label>
-                            <textarea id="editBio" rows="4" placeholder="Tell us about yourself..."></textarea>
+                            <textarea id="editBio" rows="4" placeholder="Tell us about yourself... Use **bold**, *italic*, `code`"></textarea>
                         </div>
                         <div class="form-group">
                             <label>Website</label>
@@ -233,11 +233,14 @@
                             <label>LinkedIn</label>
                             <input type="url" id="editLinkedin" placeholder="https://linkedin.com/in/username">
                         </div>
-                        <button type="submit" class="btn-primary">Save Profile</button>
+                        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                            <button type="submit" class="btn-primary">Save Changes</button>
+                            <button type="button" class="btn-secondary" onclick="navigateTo('profile')" style="padding: 0.75rem 1.5rem; background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; cursor: pointer;">Cancel</button>
+                        </div>
                     </form>
                 </div>
             </div>
-        </div>
+        </section>
 
     </main>
 
