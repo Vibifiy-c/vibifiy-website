@@ -23,17 +23,24 @@
     </nav>
 
     <main class="dashboard">
-        <!-- PAGE 1: DASHBOARD -->
+                <!-- PAGE 1: DASHBOARD (ORGANIZATION SHOWCASE) -->
         <section id="page-dashboard" class="page active">
-            <section class="stats-grid" id="statsGrid"></section>
-            <section class="chart-container">
-                <h2>Download Trends (Last 7 Days)</h2>
-                <canvas id="downloadChart"></canvas>
-            </section>
-            <section class="projects-section">
-                <h2>Open Source Projects</h2>
-                <div id="projectsList" class="projects-grid"></div>
-            </section>
+            <div class="hero-section">
+                <h1>Building awesome open-source apps.</h1>
+                <p>Explore our tools, libraries, and projects. 100% open source, 100% community driven.</p>
+                <a href="https://github.com/Vibifiy-c" target="_blank" class="btn-primary hero-btn">
+                    View Organization on GitHub ↗
+                </a>
+            </div>
+            
+            <div id="orgStats" class="stats-grid"></div>
+            
+            <h2 class="section-title">Our Projects</h2>
+            <div id="projectsList" class="projects-grid">
+                <p style="text-align: center; grid-column: 1/-1; padding: 3rem; color: var(--text-secondary);">
+                    Loading projects from GitHub...
+                </p>
+            </div>
         </section>
 
         <!-- PAGE 2: DOWNLOAD -->
