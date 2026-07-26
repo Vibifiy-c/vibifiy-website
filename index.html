@@ -15,11 +15,12 @@
             <span>Vibifiy</span>
         </div>
         <!-- ... rest of the nav ... -->
-        <div class="nav-links">
+                <div class="nav-links">
             <a href="#dashboard" class="nav-link active">Dashboard</a>
             <a href="#download" class="nav-link">Download</a>
             <a href="#reviews" class="nav-link">Reviews</a>
             <a href="#bug" class="nav-link">Bug Report</a>
+            <a href="#discussions" class="nav-link">Discussions</a>
         </div>
         <div class="controls">
             <input type="text" id="searchInput" placeholder="Search projects..." aria-label="Search projects">
@@ -116,6 +117,43 @@
                         <button type="submit" class="btn-primary" id="submitBugBtn">Report Bug</button>
                     </form>
                 </div>
+            </div>
+        </section>
+
+                <!-- PAGE 5: DISCUSSIONS -->
+        <section id="page-discussions" class="page">
+            <div class="discussions-container">
+                <div class="discussions-header">
+                    <h1>Community Discussions</h1>
+                    <p>Share ideas, ask questions, and showcase your projects</p>
+                </div>
+                
+                <!-- Create Post Form -->
+                <div class="create-post-form">
+                    <div class="form-group">
+                        <input type="text" id="discussionTitle" placeholder="What's on your mind?" required>
+                    </div>
+                    <div class="form-group">
+                        <textarea id="discussionContent" placeholder="Share your thoughts... (Markdown supported)" rows="4"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="discussionGitHubLink" placeholder="Paste a GitHub link (optional)">
+                    </div>
+                    <div class="form-group">
+                        <label class="file-upload-label">
+                            <input type="file" id="discussionImages" multiple accept="image/*" style="display: none;">
+                            <span class="upload-btn"> Add Images</span>
+                            <span id="imageCount" style="margin-left: 1rem; color: var(--text-secondary);"></span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="discussionUserName" placeholder="Your name" required>
+                    </div>
+                    <button type="button" class="btn-primary" id="submitDiscussionBtn">Post Discussion</button>
+                </div>
+                
+                <!-- Discussions List -->
+                <div id="discussionsList" class="discussions-list"></div>
             </div>
         </section>
     </main>
