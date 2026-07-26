@@ -306,10 +306,18 @@ function escapeHtml(text) {
 }
 
 document.getElementById('searchInput')?.addEventListener('input', (e) => renderProjects(e.target.value));
-window.addEventListener('resize', () => { if (document.getElementById('page-dashboard').classList.contains('active')) drawChart(); });
+
+// FIXED: Use correct ID 'page-dashboard' instead of 'dashboard'
+window.addEventListener('resize', () => { 
+    const dashboardPage = document.getElementById('page-dashboard');
+    if (dashboardPage?.classList.contains('active')) drawChart(); 
+});
 
 document.addEventListener('DOMContentLoaded', () => {
-    renderStats(); renderProjects(); renderDownloads(); drawChart();
+    renderStats(); 
+    renderProjects(); 
+    renderDownloads(); 
+    drawChart();
     const hash = window.location.hash.substring(1);
     navigateTo(hash || 'dashboard');
 });
