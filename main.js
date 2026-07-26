@@ -122,7 +122,8 @@ function navigateTo(pageId) {
         'download': 'page-download',
         'reviews': 'page-reviews',
         'bug': 'page-bug',
-        'discussions': 'page-discussions'
+        'discussions': 'page-discussions',
+        'profile': 'page-profile'
     };
     const targetId = idMap[pageId] || 'page-dashboard';
     
@@ -139,6 +140,7 @@ function navigateTo(pageId) {
     
     if (pageId === 'reviews') loadReviews();
     if (pageId === 'discussions') initDiscussions();
+    if (pageId === 'profile') loadProfile();
     
     window.scrollTo(0, 0);
 }
@@ -602,32 +604,4 @@ document.getElementById('profileForm')?.addEventListener('submit', async (e) => 
     }
 });
 
-// Update navigation to include profile
-function navigateTo(pageId) {
-    const idMap = {
-        'dashboard': 'page-dashboard',
-        'download': 'page-download',
-        'reviews': 'page-reviews',
-        'bug': 'page-bug',
-        'discussions': 'page-discussions',
-        'profile': 'page-profile'
-    };
-    const targetId = idMap[pageId] || 'page-dashboard';
-    
-    pages.forEach(page => page.classList.remove('active'));
-    navLinks.forEach(link => link.classList.remove('active'));
-    
-    const targetPage = document.getElementById(targetId);
-    if (targetPage) targetPage.classList.add('active');
-    
-    const activeLink = document.querySelector(`.nav-link[href="#${pageId}"]`);
-    if (activeLink) activeLink.classList.add('active');
-    
-    history.pushState({ page: pageId }, '', `#${pageId}`);
-    
-    if (pageId === 'reviews') loadReviews();
-    if (pageId === 'discussions') initDiscussions();
-    if (pageId === 'profile') loadProfile();
-    
-    window.scrollTo(0, 0);
-}
+// Navigation already updated above - this duplicate removed
