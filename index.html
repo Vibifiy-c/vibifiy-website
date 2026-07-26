@@ -15,13 +15,15 @@
             <span>Vibifiy</span>
         </div>
         <!-- ... rest of the nav ... -->
-                <div class="nav-links">
+                        <div class="nav-links">
             <a href="#dashboard" class="nav-link active">Dashboard</a>
             <a href="#download" class="nav-link">Download</a>
             <a href="#reviews" class="nav-link">Reviews</a>
             <a href="#bug" class="nav-link">Bug Report</a>
             <a href="#discussions" class="nav-link">Discussions</a>
+            <a href="#profile" class="nav-link">Profile</a>
         </div>
+        
         <div class="controls">
             <input type="text" id="searchInput" placeholder="Search projects..." aria-label="Search projects">
             <button id="themeToggle" aria-label="Toggle dark mode">🌙</button>
@@ -156,6 +158,87 @@
                 <div id="discussionsList" class="discussions-list"></div>
             </div>
         </section>
+
+                <!-- PAGE 6: PROFILE -->
+        <section id="page-profile" class="page">
+            <div class="profile-container">
+                <div class="profile-header-card">
+                    <div class="profile-cover">
+                        <div class="profile-avatar-large" id="profileAvatar">?</div>
+                    </div>
+                    <div class="profile-info">
+                        <h1 id="profileDisplayName">Loading...</h1>
+                        <p id="profileUsername" style="color: var(--text-secondary);">@<span></span></p>
+                        <div class="profile-stats" id="profileStats">
+                            <div class="stat"><span id="statPosts">0</span> Posts</div>
+                            <div class="stat"><span id="statReposts">0</span> Reposts</div>
+                        </div>
+                    </div>
+                    <button class="btn-primary" id="editProfileBtn" style="width: auto; padding: 0.75rem 1.5rem;">Edit Profile</button>
+                </div>
+                
+                <div class="profile-bio" id="profileBio" style="display: none;">
+                    <h3>About</h3>
+                    <div class="bio-content"></div>
+                </div>
+                
+                <div class="profile-links" id="profileLinks" style="display: none;">
+                    <h3>Links</h3>
+                    <div class="links-grid"></div>
+                </div>
+                
+                <div class="profile-tabs">
+                    <button class="tab-btn active" data-tab="posts">Posts</button>
+                    <button class="tab-btn" data-tab="activity">Activity</button>
+                </div>
+                
+                <div id="profilePosts" class="profile-posts"></div>
+            </div>
+        </section>
+
+        <!-- PROFILE EDIT MODAL -->
+        <div id="profileModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Edit Profile</h2>
+                    <button class="modal-close" onclick="closeProfileModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <form id="profileForm">
+                        <div class="form-group">
+                            <label>Display Name</label>
+                            <input type="text" id="editDisplayName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" id="editUsername" required placeholder="username">
+                        </div>
+                        <div class="form-group">
+                            <label>Bio (Markdown supported)</label>
+                            <textarea id="editBio" rows="4" placeholder="Tell us about yourself..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Website</label>
+                            <input type="url" id="editWebsite" placeholder="https://yourwebsite.com">
+                        </div>
+                        <div class="form-group">
+                            <label>GitHub</label>
+                            <input type="url" id="editGithub" placeholder="https://github.com/username">
+                        </div>
+                        <div class="form-group">
+                            <label>Twitter</label>
+                            <input type="url" id="editTwitter" placeholder="https://twitter.com/username">
+                        </div>
+                        <div class="form-group">
+                            <label>LinkedIn</label>
+                            <input type="url" id="editLinkedin" placeholder="https://linkedin.com/in/username">
+                        </div>
+                        <button type="submit" class="btn-primary">Save Profile</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <footer>

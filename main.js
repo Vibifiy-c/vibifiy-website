@@ -459,3 +459,175 @@ document.addEventListener('DOMContentLoaded', () => {
     const hash = window.location.hash.substring(1);
     navigateTo(hash || 'dashboard');
 });
+
+
+// ============================================
+// 9. PROFILE SYSTEM
+// ============================================
+
+async function getOrCreateProfile() {
+    const userId = getUserId();
+    
+    // Try to fetch existing profile
+    const { data: existing } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+    
+    if (existing) return existing;
+    
+    // Create new profile with default values
+    const defaultUsername = 'user_' + Math.random().toString(36).substr(2, 6);
+    const { data: newProfile, error } = await supabase
+        .from('profiles')
+        .insert([{
+            user_id: userId,
+            username: defaultUsername,
+            display_name: 'Anonymous User'
+        }])
+        .select()
+        .single();
+    
+    if (error) throw error;
+    return newProfile;
+}
+
+async function loadProfile() {
+    const profile = await getOrCreateProfile();
+    
+    // Update profile page
+    document.getElementById('profileDisplayName').textContent = profile.display_name || 'Anonymous';
+    document.getElementById('profileUsername').querySelector('span').textContent = profile.username;
+    document.getElementById('profileAvatar').textContent = (profile.display_name || 'A').charAt(0).toUpperCase();
+    
+    // Load bio if exists
+    if (profile.bio) {
+        document.getElementById('profileBio').style.display = 'block';
+        document.getElementById('profileBio').querySelector('.bio-content').innerHTML = renderMarkdown(profile.bio);
+    }
+    
+    // Load social links
+    const linksContainer = document.getElementById('profileLinks').querySelector('.links-grid');
+    linksContainer.innerHTML = '';
+    let hasLinks = false;
+    
+    if (profile.website) {
+        linksContainer.innerHTML += `<a href="${profile.website}" target="_blank" class="profile-link"> Website</a>`;
+        hasLinks = true;
+    }
+    if (profile.github_url) {
+        linksContainer.innerHTML += `<a href="${profile.github_url}" target="_blank" class="profile-link"> GitHub</a>`;
+        hasLinks = true;
+    }
+    if (profile.twitter_url) {
+        linksContainer.innerHTML += `<a href="${profile.twitter_url}" target="_blank" class="profile-link">🐦 Twitter</a>`;
+        hasLinks = true;
+    }
+    if (profile.linkedin_url) {
+        linksContainer.innerHTML += `<a href="${profile.linkedin_url}" target="_blank" class="profile-link">💼 LinkedIn</a>`;
+        hasLinks = true;
+    }
+    
+    if (hasLinks) {
+        document.getElementById('profileLinks').style.display = 'block';
+    }
+    
+    // Load user's posts count
+    const { count } = await supabase
+        .from('discussions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', profile.user_id);
+    
+    document.getElementById('statPosts').textContent = count || 0;
+    
+    return profile;
+}
+
+// Simple markdown renderer
+function renderMarkdown(text) {
+    if (!text) return '';
+    return text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        .replace(/\n/g, '<br>');
+}
+
+// Edit profile modal
+document.getElementById('editProfileBtn')?.addEventListener('click', async () => {
+    const profile = await getOrCreateProfile();
+    
+    document.getElementById('editDisplayName').value = profile.display_name || '';
+    document.getElementById('editUsername').value = profile.username || '';
+    document.getElementById('editBio').value = profile.bio || '';
+    document.getElementById('editWebsite').value = profile.website || '';
+    document.getElementById('editGithub').value = profile.github_url || '';
+    document.getElementById('editTwitter').value = profile.twitter_url || '';
+    document.getElementById('editLinkedin').value = profile.linkedin_url || '';
+    
+    document.getElementById('profileModal').style.display = 'flex';
+});
+
+function closeProfileModal() {
+    document.getElementById('profileModal').style.display = 'none';
+}
+
+document.getElementById('profileForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const userId = getUserId();
+    const updates = {
+        display_name: document.getElementById('editDisplayName').value,
+        username: document.getElementById('editUsername').value.toLowerCase().replace(/[^a-z0-9-]/g, ''),
+        bio: document.getElementById('editBio').value,
+        website: document.getElementById('editWebsite').value,
+        github_url: document.getElementById('editGithub').value,
+        twitter_url: document.getElementById('editTwitter').value,
+        linkedin_url: document.getElementById('editLinkedin').value,
+        updated_at: new Date().toISOString()
+    };
+    
+    const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('user_id', userId);
+    
+    if (error) {
+        alert('Error saving profile: ' + error.message);
+    } else {
+        alert('Profile saved!');
+        closeProfileModal();
+        loadProfile();
+    }
+});
+
+// Update navigation to include profile
+function navigateTo(pageId) {
+    const idMap = {
+        'dashboard': 'page-dashboard',
+        'download': 'page-download',
+        'reviews': 'page-reviews',
+        'bug': 'page-bug',
+        'discussions': 'page-discussions',
+        'profile': 'page-profile'
+    };
+    const targetId = idMap[pageId] || 'page-dashboard';
+    
+    pages.forEach(page => page.classList.remove('active'));
+    navLinks.forEach(link => link.classList.remove('active'));
+    
+    const targetPage = document.getElementById(targetId);
+    if (targetPage) targetPage.classList.add('active');
+    
+    const activeLink = document.querySelector(`.nav-link[href="#${pageId}"]`);
+    if (activeLink) activeLink.classList.add('active');
+    
+    history.pushState({ page: pageId }, '', `#${pageId}`);
+    
+    if (pageId === 'reviews') loadReviews();
+    if (pageId === 'discussions') initDiscussions();
+    if (pageId === 'profile') loadProfile();
+    
+    window.scrollTo(0, 0);
+}

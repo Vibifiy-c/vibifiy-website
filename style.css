@@ -483,3 +483,174 @@ footer a { color: var(--accent); text-decoration: none; }
     border-color: var(--accent);
     color: var(--accent);
 }
+
+/* Profile Page */
+.profile-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.profile-header-card {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.profile-cover {
+    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    height: 150px;
+    border-radius: 8px;
+    margin-bottom: -50px;
+}
+
+.profile-avatar-large {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    border: 4px solid var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0 auto;
+}
+
+.profile-info {
+    text-align: center;
+    margin: 1rem 0;
+}
+
+.profile-info h1 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.profile-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin: 1rem 0;
+}
+
+.stat {
+    color: var(--text-secondary);
+}
+
+.stat span {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.profile-bio, .profile-links {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}
+
+.profile-bio h3, .profile-links h3 {
+    margin-bottom: 1rem;
+    color: var(--accent);
+}
+
+.bio-content {
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.links-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.profile-link {
+    background: var(--bg-primary);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+}
+
+.profile-link:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.profile-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border);
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 1rem 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1rem;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+}
+
+.tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
