@@ -4,41 +4,218 @@
     --border: #e9ecef; --shadow: 0 4px 6px rgba(0, 0, 0, 0.05); --error: #e74c3c; --success: #2ecc71;
 }
 [data-theme="dark"] {
-    --bg-primary: #000000; --bg-secondary: #0a0a0a; --text-primary: #e6edf3;
-    --text-secondary: #7d8590; --accent: #58a6ff; --accent-hover: #1f6feb;
-    --border: #30363d; --shadow: 0 4px 12px rgba(0, 0, 0, 1);
+    --bg-primary: #000000; --bg-secondary: #141414; --text-primary: #f0eeff;
+    --text-secondary: #9d94c4; --accent: #a020f0; --accent-hover: #8e1cd9;
+    --border: #3f3f3f; --shadow: 0 4px 12px rgba(0, 0, 0, 1);
 }
 
-/* GitHub-Style Buttons for Pitch Black Theme */
+/* Lavender-Themed Buttons for Pitch Black Theme */
 .btn-primary {
-    background: #238636 !important;
+    background: #a020f0 !important;
     color: #ffffff !important;
-    border: 1px solid rgba(240, 246, 252, 0.1) !important;
+    border: 1px solid rgba(160, 32, 240, 0.3) !important;
     padding: 0.6rem 1.2rem !important;
-    border-radius: 6px !important;
+    border-radius: 8px !important;
     font-weight: 500 !important;
     cursor: pointer !important;
     transition: all 0.2s !important;
 }
 
 .btn-primary:hover {
-    background: #2ea043 !important;
+    background: #8e1cd9 !important;
+    border-color: #a020f0 !important;
 }
 
 .btn-outline, .btn-secondary {
     background: transparent !important;
-    border: 1px solid #30363d !important;
-    color: #c9d1d9 !important;
+    border: 1px solid #3f3f3f !important;
+    color: #9d94c4 !important;
     padding: 0.6rem 1.2rem !important;
-    border-radius: 6px !important;
+    border-radius: 8px !important;
     font-weight: 500 !important;
     cursor: pointer !important;
     transition: all 0.2s !important;
 }
 
 .btn-outline:hover, .btn-secondary:hover {
-    border-color: #8b949e !important;
-    background: #21262d !important;
+    border-color: #a020f0 !important;
+    background: #3d2b45 !important;
+    color: #f0eeff !important;
+}
+
+/* Accent links and interactive elements */
+a {
+    color: #a020f0 !important;
+}
+
+a:hover {
+    color: #8e1cd9 !important;
+}
+
+/* Input focus states */
+input:focus, textarea:focus {
+    border-color: #a020f0 !important;
+    box-shadow: 0 0 0 3px rgba(160, 32, 240, 0.15) !important;
+}
+
+/* Active nav link */
+.nav-link.active {
+    color: #a020f0 !important;
+}
+
+.nav-link.active::after {
+    background: #a020f0 !important;
+}
+
+/* Stat values and accent text */
+.stat-card .value {
+    color: #a020f0 !important;
+}
+
+.project-header h3 {
+    color: #a020f0 !important;
+}
+
+.readme-header h3, .profile-bio h3, .profile-links h3 {
+    color: #a020f0 !important;
+}
+
+/* Hero gradient text */
+.hero-section h1 {
+    background: linear-gradient(90deg, #a020f0, #c77dff) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+}
+
+/* Badges */
+.badge {
+    background: #a020f0 !important;
+}
+
+/* Author avatars */
+.author-avatar {
+    background: #a020f0 !important;
+}
+
+/* Profile avatar letter */
+.profile-avatar-large {
+    color: #a020f0 !important;
+}
+
+/* Tab active state */
+.tab-btn.active {
+    color: #a020f0 !important;
+    border-bottom-color: #a020f0 !important;
+}
+
+/* Discussion action hover */
+.discussion-action-btn:hover {
+    color: #a020f0 !important;
+}
+
+/* Project link hover */
+.project-link:hover {
+    background: #a020f0 !important;
+    border-color: #a020f0 !important;
+}
+
+/* Profile link hover */
+.profile-link:hover {
+    border-color: #a020f0 !important;
+    color: #a020f0 !important;
+}
+
+/* Social link badge hover */
+.social-link-badge:hover {
+    border-color: #a020f0 !important;
+    color: #a020f0 !important;
+}
+
+/* Comment border */
+.comment-card {
+    border-left: 3px solid #a020f0 !important;
+}
+
+/* Blockquote */
+.readme-content blockquote {
+    border-left: 3px solid #a020f0 !important;
+}
+
+/* Section title border */
+.section-title {
+    border-left: 4px solid #a020f0 !important;
+}
+
+/* Logo color */
+.logo {
+    color: #a020f0 !important;
+}
+
+/* Footer link */
+footer a {
+    color: #a020f0 !important;
+}
+
+/* GitHub link */
+.github-link {
+    color: #a020f0 !important;
+}
+
+/* Review stars */
+.review-stars {
+    color: #f1c40f !important;
+}
+
+/* Star rating active */
+.star-rating span.active {
+    color: #f1c40f !important;
+}
+
+/* Success color */
+.vibi-result {
+    color: #4caf50 !important;
+}
+
+/* Error color */
+.vibi-error {
+    color: #e53935 !important;
+}
+
+/* Card hover border */
+.project-card:hover {
+    border-color: #a020f0 !important;
+}
+
+/* Download button hover */
+.download-btn:hover {
+    border-color: #a020f0 !important;
+}
+
+/* Upload button hover */
+.upload-btn:hover {
+    border-color: #a020f0 !important;
+    color: #a020f0 !important;
+}
+
+/* Sidebar link active */
+.sidebar-link.active {
+    color: #a020f0 !important;
+}
+
+/* Settings section hover */
+.agentic-card:hover {
+    border-color: #a020f0 !important;
+}
+
+/* Scrollbar accent */
+::-webkit-scrollbar-thumb {
+    background: #a020f0 !important;
+}
+
+/* Selection highlight */
+::selection {
+    background: rgba(160, 32, 240, 0.3) !important;
+    color: #f0eeff !important;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.3s, color 0.3s; }
