@@ -1065,79 +1065,82 @@ document.getElementById('editBannerFile')?.addEventListener('change', (e) => {
 
 // Save profile function
 async function saveProfile() {
-    const userId = getUserId();
-    const updates = {
-        display_name: document.getElementById('editDisplayName').value,
-        username: document.getElementById('editUsername').value.toLowerCase().replace(/[^a-z0-9-]/g, ''),
-        bio: document.getElementById('editBio').value,
-        website: document.getElementById('editWebsite').value,
-        github_url: document.getElementById('editGithub').value,
-        twitter_url: document.getElementById('editTwitter').value,
-        linkedin_url: document.getElementById('editLinkedin').value,
-        readme: document.getElementById('editReadme').value,
-        updated_at: new Date().toISOString()
-    };
-    
-    // Handle avatar deletion
-    if (window._deleteAvatar) {
-        updates.avatar_url = null;
-        window._deleteAvatar = false;
-    }
-    
-    // Handle banner deletion
-    if (window._deleteBanner) {
-        updates.banner_url = null;
-        window._deleteBanner = false;
-    }
-    
-    // Upload avatar if file selected
-    const avatarFile = document.getElementById('editAvatarFile').files[0];
-    if (avatarFile) {
-        try {
-            const avatarUrl = await uploadProfileImage(avatarFile, 'avatar');
-            updates.avatar_url = avatarUrl;
-        } catch (err) {
-            showCustomDialog('Upload Error', 'Error uploading avatar: ' + err.message);
-            return;
+    // Show confirmation dialog first
+    showCustomDialog('Confirm Save', 'Are you sure you want to save the changes to your account?', async () => {
+        const userId = getUserId();
+        const updates = {
+            display_name: document.getElementById('editDisplayName').value,
+            username: document.getElementById('editUsername').value.toLowerCase().replace(/[^a-z0-9-]/g, ''),
+            bio: document.getElementById('editBio').value,
+            website: document.getElementById('editWebsite').value,
+            github_url: document.getElementById('editGithub').value,
+            twitter_url: document.getElementById('editTwitter').value,
+            linkedin_url: document.getElementById('editLinkedin').value,
+            readme: document.getElementById('editReadme').value,
+            updated_at: new Date().toISOString()
+        };
+        
+        // Handle avatar deletion
+        if (window._deleteAvatar) {
+            updates.avatar_url = null;
+            window._deleteAvatar = false;
         }
-    }
-    
-    // Upload banner if file selected
-    const bannerFile = document.getElementById('editBannerFile').files[0];
-    if (bannerFile) {
-        try {
-            const bannerUrl = await uploadProfileImage(bannerFile, 'banner');
-            updates.banner_url = bannerUrl;
-        } catch (err) {
-            showCustomDialog('Upload Error', 'Error uploading banner: ' + err.message);
-            return;
+        
+        // Handle banner deletion
+        if (window._deleteBanner) {
+            updates.banner_url = null;
+            window._deleteBanner = false;
         }
-    }
-    
-    // Collect custom social links
-    const customSocials = [];
-    document.querySelectorAll('.custom-social').forEach(el => {
-        const url = el.querySelector('.custom-social-url').value;
-        const label = el.querySelector('.custom-social-label').value;
-        if (url && label) customSocials.push({ url, label });
-    });
-    if (customSocials.length > 0) {
-        updates.custom_social_links = JSON.stringify(customSocials);
-    }
-    
-    const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('user_id', userId);
-    
-    if (error) {
-        showCustomDialog('Error', 'Error saving profile: ' + error.message);
-    } else {
-        showCustomDialog('Success', 'Profile saved successfully!', () => {
-            updateNavAvatar();
-            loadSettingsSection('account'); // Stay on settings page
+        
+        // Upload avatar if file selected
+        const avatarFile = document.getElementById('editAvatarFile').files[0];
+        if (avatarFile) {
+            try {
+                const avatarUrl = await uploadProfileImage(avatarFile, 'avatar');
+                updates.avatar_url = avatarUrl;
+            } catch (err) {
+                showCustomDialog('Upload Error', 'Error uploading avatar: ' + err.message);
+                return;
+            }
+        }
+        
+        // Upload banner if file selected
+        const bannerFile = document.getElementById('editBannerFile').files[0];
+        if (bannerFile) {
+            try {
+                const bannerUrl = await uploadProfileImage(bannerFile, 'banner');
+                updates.banner_url = bannerUrl;
+            } catch (err) {
+                showCustomDialog('Upload Error', 'Error uploading banner: ' + err.message);
+                return;
+            }
+        }
+        
+        // Collect custom social links
+        const customSocials = [];
+        document.querySelectorAll('.custom-social').forEach(el => {
+            const url = el.querySelector('.custom-social-url').value;
+            const label = el.querySelector('.custom-social-label').value;
+            if (url && label) customSocials.push({ url, label });
         });
-    }
+        if (customSocials.length > 0) {
+            updates.custom_social_links = JSON.stringify(customSocials);
+        }
+        
+        const { error } = await supabase
+            .from('profiles')
+            .update(updates)
+            .eq('user_id', userId);
+        
+        if (error) {
+            showCustomDialog('Error', 'Error saving profile: ' + error.message);
+        } else {
+            showCustomDialog('Success', 'Profile saved successfully!', () => {
+                updateNavAvatar();
+                loadSettingsSection('account'); // Stay on settings page
+            });
+        }
+    });
 }
 
 // Expose to window for inline onclick handlers (ES modules don't expose by default)
