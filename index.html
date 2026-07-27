@@ -141,8 +141,16 @@
                     <p>Share ideas, ask questions, and showcase your projects</p>
                 </div>
                 
-                <!-- Create Post Form -->
-                <div class="create-post-form">
+                <!-- New Post Button -->
+                <button class="btn-primary new-post-toggle" id="newPostToggle">+ New Post</button>
+                
+                <!-- Create Post Form (Hidden by default) -->
+                <div class="create-post-form" id="createPostForm" style="display: none;">
+                    <div class="form-header">
+                        <h3>Create a Discussion</h3>
+                        <button class="btn-icon close-form" id="closePostForm" title="Close">×</button>
+                    </div>
+                    
                     <div class="form-group">
                         <input type="text" id="discussionTitle" placeholder="What's on your mind?" required>
                     </div>
@@ -152,16 +160,30 @@
                     <div class="form-group">
                         <input type="text" id="discussionGitHubLink" placeholder="Paste a GitHub link (optional)">
                     </div>
-                    <div class="form-group">
-                        <label class="file-upload-label">
-                            <input type="file" id="discussionImages" multiple accept="image/*" style="display: none;">
-                            <span class="upload-btn"> Add Images</span>
-                            <span id="imageCount" style="margin-left: 1rem; color: var(--text-secondary);"></span>
-                        </label>
+                    
+                    <!-- Image Attachment Menu -->
+                    <div class="image-attachment-section">
+                        <div class="pin-menu-wrapper">
+                            <button class="btn-icon pin-btn" id="pinMenuToggle" title="Add media">📌</button>
+                            <div class="pin-dropdown" id="pinDropdown">
+                                <div class="pin-menu-item" id="uploadImageBtn">
+                                    <span>🖼️</span>
+                                    <span>Upload Image</span>
+                                </div>
+                                <input type="file" id="discussionImages" multiple accept="image/*" style="display: none;">
+                            </div>
+                        </div>
+                        
+                        <!-- Image URL Input -->
+                        <div class="image-url-input" id="imageUrlSection" style="display: none;">
+                            <input type="url" id="discussionImageUrl" placeholder="Paste image URL (https://...)">
+                            <button class="btn-icon-small" id="addImageUrlBtn">Add</button>
+                        </div>
+                        
+                        <!-- Image Preview Area -->
+                        <div class="image-preview-area" id="imagePreviewArea"></div>
                     </div>
-                    <div class="form-group">
-                        <input type="text" id="discussionUserName" placeholder="Your name" required>
-                    </div>
+                    
                     <button type="button" class="btn-primary" id="submitDiscussionBtn">Post Discussion</button>
                 </div>
                 

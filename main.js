@@ -763,26 +763,48 @@ async function fetchGitHubRepoData(url) {
     } catch (error) { return null; }
 }
 
-async function uploadDiscussionImages(files, discussionId) {
-    const uploadPromises = Array.from(files).map(async (file) => {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${discussionId}_${Date.now()}_${file.name}`;
-        const { error } = await supabase.storage.from('discussion-images').upload(fileName, file, { cacheControl: '3600', upsert: false });
-        if (error) throw error;
-        const { data: { publicUrl } } = supabase.storage.from('discussion-images').getPublicUrl(fileName);
-        return { name: file.name, url: publicUrl };
-    });
-    return await Promise.all(uploadPromises);
+async function uploadDiscussionImage(file) {
+    const userId = getUserId();
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}_${Date.now()}_${file.name}`;
+    
+    const { error } = await supabase.storage
+        .from('discussion-images')
+        .upload(fileName, file, { cacheControl: '3600', upsert: false });
+    
+    if (error) throw error;
+    
+    const { data: { publicUrl } } = supabase.storage
+        .from('discussion-images')
+        .getPublicUrl(fileName);
+    
+    return publicUrl;
 }
 
-async function createDiscussion(title, content, userName, githubLink, images = []) {
+async function createDiscussion(title, content, userName, githubLink, images = [], uploadedImages = []) {
     const userId = getUserId();
     let imageData = [];
+    
+    // Handle file uploads (legacy)
     if (images.length > 0) {
         const tempId = 'temp_' + Date.now();
         imageData = await uploadDiscussionImages(images, tempId);
     }
-    const { data, error } = await supabase.from('discussions').insert([{ user_name: userName, user_id: userId, title, content, images: imageData, github_link: githubLink }]).select();
+    
+    // Add pre-uploaded images
+    if (uploadedImages.length > 0) {
+        imageData = [...imageData, ...uploadedImages];
+    }
+    
+    const { data, error } = await supabase.from('discussions').insert([{
+        user_name: userName,
+        user_id: userId,
+        title,
+        content,
+        images: imageData,
+        github_link: githubLink
+    }]).select();
+    
     if (error) throw error;
     return data[0];
 }
@@ -870,31 +892,162 @@ async function initDiscussions() {
     }
 }
 
+// Image state
+window._discussionImages = [];
+
+// Toggle new post form
+document.getElementById('newPostToggle')?.addEventListener('click', async () => {
+    const form = document.getElementById('createPostForm');
+    if (form.style.display === 'none' || !form.style.display) {
+        form.style.display = 'block';
+        // Auto-fill username from profile
+        const profile = await getOrCreateProfile();
+        // We don't need name field anymore, it's from profile
+    } else {
+        form.style.display = 'none';
+    }
+});
+
+// Close form button
+document.getElementById('closePostForm')?.addEventListener('click', () => {
+    document.getElementById('createPostForm').style.display = 'none';
+});
+
+// Pin menu toggle
+document.getElementById('pinMenuToggle')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('pinDropdown').classList.toggle('show');
+    document.getElementById('imageUrlSection').style.display = 'block';
+});
+
+// Close pin menu when clicking outside
+document.addEventListener('click', () => {
+    document.getElementById('pinDropdown')?.classList.remove('show');
+});
+
+// Upload image button
+document.getElementById('uploadImageBtn')?.addEventListener('click', () => {
+    document.getElementById('discussionImages').click();
+});
+
+// Handle file upload
+document.getElementById('discussionImages')?.addEventListener('change', (e) => {
+    const files = Array.from(e.target.files);
+    files.forEach(file => {
+        if (file.size > 5 * 1024 * 1024) {
+            showCustomDialog('Error', `File ${file.name} exceeds 5MB limit`);
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            window._discussionImages.push({
+                type: 'file',
+                data: event.target.result,
+                file: file
+            });
+            renderImagePreviews();
+        };
+        reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+});
+
+// Add image URL
+document.getElementById('addImageUrlBtn')?.addEventListener('click', () => {
+    const urlInput = document.getElementById('discussionImageUrl');
+    const url = urlInput.value.trim();
+    
+    if (!url) {
+        showCustomDialog('Error', 'Please enter an image URL');
+        return;
+    }
+    
+    // Validate it's an image URL
+    if (!url.match(/\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i) && !url.includes('imgur.com') && !url.includes('githubusercontent.com')) {
+        showCustomDialog('Warning', 'This URL might not be an image. Continue anyway?');
+    }
+    
+    window._discussionImages.push({
+        type: 'url',
+        data: url
+    });
+    
+    urlInput.value = '';
+    renderImagePreviews();
+});
+
+// Render image previews
+function renderImagePreviews() {
+    const previewArea = document.getElementById('imagePreviewArea');
+    if (!previewArea) return;
+    
+    if (window._discussionImages.length === 0) {
+        previewArea.innerHTML = '';
+        return;
+    }
+    
+    previewArea.innerHTML = window._discussionImages.map((img, index) => `
+        <div class="image-preview-item">
+            <img src="${img.data}" alt="Preview">
+            <button class="image-preview-remove" onclick="removeImage(${index})">×</button>
+        </div>
+    `).join('');
+}
+
+// Remove image
+window.removeImage = (index) => {
+    window._discussionImages.splice(index, 1);
+    renderImagePreviews();
+};
+
+// Submit discussion
 document.getElementById('submitDiscussionBtn')?.addEventListener('click', async () => {
     const title = document.getElementById('discussionTitle').value.trim();
     const content = document.getElementById('discussionContent').value.trim();
-    const userName = document.getElementById('discussionUserName').value.trim();
     const githubLink = document.getElementById('discussionGitHubLink').value.trim();
-    const imageInput = document.getElementById('discussionImages');
     
-    if (!title || !content || !userName) { alert('Please fill in all required fields'); return; }
+    if (!title || !content) {
+        showCustomDialog('Missing Info', 'Please enter a title and content');
+        return;
+    }
     
     const btn = document.getElementById('submitDiscussionBtn');
-    btn.innerText = 'Posting...'; btn.disabled = true;
+    btn.innerText = 'Posting...';
+    btn.disabled = true;
     
     try {
-        await createDiscussion(title, content, userName, githubLink, imageInput.files);
-        alert('Discussion posted!');
-        document.getElementById('discussionTitle').value = '';
-        document.getElementById('discussionContent').value = '';
-        document.getElementById('discussionUserName').value = '';
-        document.getElementById('discussionGitHubLink').value = '';
-        imageInput.value = '';
-        await initDiscussions();
+        // Get user profile for name
+        const profile = await getOrCreateProfile();
+        const userName = profile.display_name || 'Anonymous';
+        
+        // Upload file images
+        const uploadedImages = [];
+        for (const img of window._discussionImages) {
+            if (img.type === 'file') {
+                const uploadResult = await uploadDiscussionImage(img.file);
+                uploadedImages.push({ name: img.file.name, url: uploadResult });
+            } else if (img.type === 'url') {
+                uploadedImages.push({ name: 'image', url: img.data });
+            }
+        }
+        
+        await createDiscussion(title, content, userName, githubLink, [], uploadedImages);
+        
+        showCustomDialog('Success', 'Discussion posted!', () => {
+            // Reset form
+            document.getElementById('discussionTitle').value = '';
+            document.getElementById('discussionContent').value = '';
+            document.getElementById('discussionGitHubLink').value = '';
+            window._discussionImages = [];
+            renderImagePreviews();
+            document.getElementById('createPostForm').style.display = 'none';
+            initDiscussions();
+        });
     } catch (error) {
-        alert('Error posting discussion: ' + error.message);
+        showCustomDialog('Error', 'Error posting discussion: ' + error.message);
     } finally {
-        btn.innerText = 'Post Discussion'; btn.disabled = false;
+        btn.innerText = 'Post Discussion';
+        btn.disabled = false;
     }
 });
 
