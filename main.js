@@ -505,19 +505,13 @@ async function loadProfile() {
     document.getElementById('profileUsername').querySelector('span').textContent = profile.username;
     document.getElementById('profileAvatar').textContent = (profile.display_name || 'A').charAt(0).toUpperCase();
     
-    // Load bio if exists
-    if (profile.bio) {
-        document.getElementById('profileBio').style.display = 'block';
-        document.getElementById('profileBio').querySelector('.bio-content').innerHTML = renderMarkdown(profile.bio);
-    }
-    
     // Load social links
     const linksContainer = document.getElementById('profileLinks').querySelector('.links-grid');
     linksContainer.innerHTML = '';
     let hasLinks = false;
     
     if (profile.website) {
-        linksContainer.innerHTML += `<a href="${profile.website}" target="_blank" class="profile-link"> Website</a>`;
+        linksContainer.innerHTML += `<a href="${profile.website}" target="_blank" class="profile-link">🌐 Website</a>`;
         hasLinks = true;
     }
     if (profile.github_url) {
@@ -535,6 +529,16 @@ async function loadProfile() {
     
     if (hasLinks) {
         document.getElementById('profileLinks').style.display = 'block';
+    } else {
+        document.getElementById('profileLinks').style.display = 'none';
+    }
+    
+    // Load README
+    const readmeContent = document.getElementById('readmeContent');
+    if (profile.readme) {
+        readmeContent.innerHTML = renderMarkdown(profile.readme);
+    } else {
+        readmeContent.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No README yet. Click the edit button to add one!</p>';
     }
     
     // Load user's posts count
@@ -548,13 +552,20 @@ async function loadProfile() {
     return profile;
 }
 
-// Simple markdown renderer
+// Enhanced markdown renderer
 function renderMarkdown(text) {
     if (!text) return '';
     return text
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
         .replace(/`(.*?)`/g, '<code>$1</code>')
+        .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>')
+        .replace(/^- (.*$)/gim, '<ul><li>$1</li></ul>')
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+        .replace(/\n\n/g, '</p><p>')
         .replace(/\n/g, '<br>');
 }
 
@@ -597,9 +608,43 @@ document.getElementById('profileForm')?.addEventListener('submit', async (e) => 
         alert('Error saving profile: ' + error.message);
     } else {
         alert('Profile saved!');
-        closeProfileModal();
+        navigateTo('profile');
         loadProfile();
     }
+});
+
+// README Editor
+document.getElementById('editReadmeBtn')?.addEventListener('click', async () => {
+    const profile = await getOrCreateProfile();
+    const readmeContent = document.getElementById('readmeContent');
+    
+    // Switch to edit mode
+    readmeContent.innerHTML = `
+        <textarea id="readmeEditor" placeholder="Write your README in Markdown...">${profile.readme || ''}</textarea>
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <button class="btn-primary" id="saveReadmeBtn" style="width: auto;">Save README</button>
+            <button class="btn-secondary" id="cancelReadmeBtn" style="width: auto;">Cancel</button>
+        </div>
+    `;
+    
+    document.getElementById('saveReadmeBtn').addEventListener('click', async () => {
+        const newReadme = document.getElementById('readmeEditor').value;
+        const { error } = await supabase
+            .from('profiles')
+            .update({ readme: newReadme, updated_at: new Date().toISOString() })
+            .eq('user_id', profile.user_id);
+        
+        if (error) {
+            alert('Error saving README: ' + error.message);
+        } else {
+            alert('README saved!');
+            loadProfile();
+        }
+    });
+    
+    document.getElementById('cancelReadmeBtn').addEventListener('click', () => {
+        loadProfile();
+    });
 });
 
 // Make sure there is NO second navigateTo function below this point

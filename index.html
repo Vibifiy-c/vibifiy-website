@@ -163,28 +163,40 @@
         <section id="page-profile" class="page">
             <div class="profile-container">
                 <div class="profile-header-card">
-                    <div class="profile-cover">
-                        <div class="profile-avatar-large" id="profileAvatar">?</div>
+                    <div class="profile-banner" id="profileBanner">
+                        <div class="profile-avatar-wrapper">
+                            <div class="profile-avatar-large" id="profileAvatar">?</div>
+                        </div>
                     </div>
-                    <div class="profile-info">
-                        <h1 id="profileDisplayName">Loading...</h1>
-                        <p id="profileUsername" style="color: var(--text-secondary);">@<span></span></p>
+                    <div class="profile-info-section">
+                        <div class="profile-info-header">
+                            <div>
+                                <h1 id="profileDisplayName">Loading...</h1>
+                                <p id="profileUsername" class="profile-username">@<span></span></p>
+                            </div>
+                            <button class="btn-primary" id="editProfileBtn" style="width: auto; padding: 0.6rem 1.2rem;">Edit Profile</button>
+                        </div>
                         <div class="profile-stats" id="profileStats">
                             <div class="stat"><span id="statPosts">0</span> Posts</div>
                             <div class="stat"><span id="statReposts">0</span> Reposts</div>
                         </div>
                     </div>
-                    <button class="btn-primary" id="editProfileBtn" style="width: auto; padding: 0.75rem 1.5rem;">Edit Profile</button>
-                </div>
-                
-                <div class="profile-bio" id="profileBio" style="display: none;">
-                    <h3>About</h3>
-                    <div class="bio-content"></div>
                 </div>
                 
                 <div class="profile-links" id="profileLinks" style="display: none;">
                     <h3>Links</h3>
                     <div class="links-grid"></div>
+                </div>
+                
+                <!-- README Section -->
+                <div class="readme-section">
+                    <div class="readme-header">
+                        <h3>📄 README</h3>
+                        <button class="btn-icon" id="editReadmeBtn" title="Edit README">✏️</button>
+                    </div>
+                    <div id="readmeContent" class="readme-content">
+                        <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No README yet. Click the edit button to add one!</p>
+                    </div>
                 </div>
                 
                 <div class="profile-tabs">

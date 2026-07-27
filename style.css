@@ -501,41 +501,59 @@ footer a { color: var(--accent); text-decoration: none; }
     position: relative;
 }
 
-.profile-cover {
+.profile-banner {
     background: linear-gradient(135deg, var(--accent), var(--accent-hover));
-    height: 150px;
-    border-radius: 8px;
-    margin-bottom: -50px;
+    height: 180px;
+    border-radius: 12px 12px 0 0;
+    position: relative;
+    margin: -2rem -2rem 0 -2rem;
+}
+
+.profile-avatar-wrapper {
+    position: absolute;
+    bottom: -50px;
+    left: 2rem;
 }
 
 .profile-avatar-large {
-    width: 100px;
-    height: 100px;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
     background: var(--bg-secondary);
-    border: 4px solid var(--bg-secondary);
+    border: 5px solid var(--bg-secondary);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 3rem;
+    font-size: 3.5rem;
     font-weight: 700;
     color: var(--accent);
-    margin: 0 auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
-.profile-info {
-    text-align: center;
-    margin: 1rem 0;
+.profile-info-section {
+    padding-top: 60px;
+}
+
+.profile-info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
 }
 
 .profile-info h1 {
     font-size: 2rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.profile-username {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    margin: 0;
 }
 
 .profile-stats {
     display: flex;
-    justify-content: center;
     gap: 2rem;
     margin: 1rem 0;
 }
@@ -547,6 +565,89 @@ footer a { color: var(--accent); text-decoration: none; }
 .stat span {
     font-weight: 700;
     color: var(--text-primary);
+}
+
+/* README Section */
+.readme-section {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}
+
+.readme-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.readme-header h3 {
+    margin: 0;
+    color: var(--accent);
+}
+
+.readme-content {
+    line-height: 1.7;
+    color: var(--text-primary);
+    min-height: 100px;
+}
+
+.readme-content h1, .readme-content h2, .readme-content h3 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.readme-content code {
+    background: var(--bg-primary);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+.readme-content pre {
+    background: var(--bg-primary);
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+}
+
+.readme-content blockquote {
+    border-left: 3px solid var(--accent);
+    padding-left: 1rem;
+    margin: 1rem 0;
+    color: var(--text-secondary);
+}
+
+.readme-content ul, .readme-content ol {
+    padding-left: 2rem;
+}
+
+.readme-content a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.readme-content a:hover {
+    text-decoration: underline;
+}
+
+#readmeEditor {
+    width: 100%;
+    min-height: 300px;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Courier New', monospace;
+    font-size: 0.95rem;
+    resize: vertical;
 }
 
 .profile-bio, .profile-links {
