@@ -175,22 +175,27 @@ async function loadSettingsSection(section) {
                             ${profile.avatar_url ? `<img src="${profile.avatar_url}" alt="${profile.display_name}">` : (profile.display_name || 'A').charAt(0).toUpperCase()}
                         </div>
                     </div>
+                    ${profile.avatar_url ? `<button type="button" class="btn-danger" id="deleteAvatarBtn" style="margin-top: 0.75rem;">Delete profile photo</button>` : ''}
                 </div>
                 <div class="profile-picture-right">
                     <h2>Banner image</h2>
                     <div class="banner-preview" id="editBannerPreview">
                         ${profile.banner_url ? `<img src="${profile.banner_url}" alt="Banner">` : '<span style="color: var(--text-secondary);">No banner</span>'}
                     </div>
+                    ${profile.banner_url ? `<button type="button" class="btn-danger" id="deleteBannerBtn" style="margin-top: 0.75rem;">Delete banner image</button>` : ''}
                     <div class="form-group">
                         <label>Upload Banner Image</label>
                         <input type="file" id="editBannerFile" accept="image/*">
-                        <small style="color: var(--text-secondary);">Recommended: 1500x500px</small>
+                        <small style="color: var(--text-secondary); display: block; margin-top: 0.25rem;">Recommended: 2560 x 1440px (16:9)</small>
+                        <small style="color: var(--text-secondary); display: block;">Minimum: 1546 x 423px (safe area)</small>
+                        <small style="color: var(--text-secondary); display: block;">Max: 6MB</small>
                     </div>
                     <h2 style="margin-top: 1.5rem;">Profile picture</h2>
                     <div class="form-group">
                         <label>Upload Profile Photo</label>
                         <input type="file" id="editAvatarFile" accept="image/*">
-                        <small style="color: var(--text-secondary);">Recommended: 400x400px (square)</small>
+                        <small style="color: var(--text-secondary); display: block; margin-top: 0.25rem;">Recommended: 400x400px (square)</small>
+                        <small style="color: var(--text-secondary); display: block;">Max: 2MB</small>
                     </div>
                 </div>
             </div>
@@ -242,9 +247,18 @@ async function loadSettingsSection(section) {
         document.getElementById('editAvatarFile')?.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
+                // Check file size (max 2MB)
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('Profile photo must be less than 2MB. Your file is ' + (file.size / 1024 / 1024).toFixed(2) + 'MB');
+                    e.target.value = '';
+                    return;
+                }
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     document.getElementById('editProfileAvatar').innerHTML = `<img src="${event.target.result}" alt="Preview">`;
+                    // Remove delete button if exists
+                    const deleteBtn = document.getElementById('deleteAvatarBtn');
+                    if (deleteBtn) deleteBtn.remove();
                 };
                 reader.readAsDataURL(file);
             }
@@ -252,11 +266,40 @@ async function loadSettingsSection(section) {
         document.getElementById('editBannerFile')?.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
+                // Check file size (max 6MB)
+                if (file.size > 6 * 1024 * 1024) {
+                    alert('Banner image must be less than 6MB. Your file is ' + (file.size / 1024 / 1024).toFixed(2) + 'MB');
+                    e.target.value = '';
+                    return;
+                }
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     document.getElementById('editBannerPreview').innerHTML = `<img src="${event.target.result}" alt="Banner Preview">`;
+                    // Remove delete button if exists
+                    const deleteBtn = document.getElementById('deleteBannerBtn');
+                    if (deleteBtn) deleteBtn.remove();
                 };
                 reader.readAsDataURL(file);
+            }
+        });
+        
+        // Delete avatar button
+        document.getElementById('deleteAvatarBtn')?.addEventListener('click', () => {
+            if (confirm('Delete your profile photo?')) {
+                document.getElementById('editProfileAvatar').innerHTML = (profile.display_name || 'A').charAt(0).toUpperCase();
+                document.getElementById('editAvatarFile').value = '';
+                // Mark for deletion
+                window._deleteAvatar = true;
+            }
+        });
+        
+        // Delete banner button
+        document.getElementById('deleteBannerBtn')?.addEventListener('click', () => {
+            if (confirm('Delete your banner image?')) {
+                document.getElementById('editBannerPreview').innerHTML = '<span style="color: var(--text-secondary);">No banner</span>';
+                document.getElementById('editBannerFile').value = '';
+                // Mark for deletion
+                window._deleteBanner = true;
             }
         });
     } else if (section === 'general') {
@@ -1025,6 +1068,18 @@ async function saveProfile() {
         readme: document.getElementById('editReadme').value,
         updated_at: new Date().toISOString()
     };
+    
+    // Handle avatar deletion
+    if (window._deleteAvatar) {
+        updates.avatar_url = null;
+        window._deleteAvatar = false;
+    }
+    
+    // Handle banner deletion
+    if (window._deleteBanner) {
+        updates.banner_url = null;
+        window._deleteBanner = false;
+    }
     
     // Upload avatar if file selected
     const avatarFile = document.getElementById('editAvatarFile').files[0];
