@@ -688,6 +688,14 @@ async function loadProfileEdit() {
         avatarEl.innerHTML = (profile.display_name || 'A').charAt(0).toUpperCase();
     }
     
+    // Update banner preview
+    const bannerPreview = document.getElementById('editBannerPreview');
+    if (profile.banner_url) {
+        bannerPreview.innerHTML = `<img src="${profile.banner_url}" alt="Banner" style="width: 100%; height: 100%; object-fit: cover;">`;
+    } else {
+        bannerPreview.innerHTML = `<span style="color: var(--text-secondary);">No banner</span>`;
+    }
+    
     // Load form fields
     document.getElementById('editDisplayName').value = profile.display_name || '';
     document.getElementById('editUsername').value = profile.username || '';
