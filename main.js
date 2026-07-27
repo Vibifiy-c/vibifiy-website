@@ -125,7 +125,7 @@ function navigateTo(pageId) {
         'bug': 'page-bug',
         'discussions': 'page-discussions',
         'profile': 'page-profile',
-        'profile-edit': 'profileEdit'
+        'profile-edit': 'page-profile-edit'
     };
     const targetId = idMap[pageId] || 'page-dashboard';
     
