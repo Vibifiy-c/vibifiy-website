@@ -971,13 +971,43 @@ document.getElementById('editAvatarFile')?.addEventListener('change', (e) => {
 
 document.getElementById('editBannerFile')?.addEventListener('change', (e) => {
     const file = e.target.files[0];
-    if (file) {
+    if (!file) return;
+    
+    // Check file size (max 6MB like YouTube)
+    if (file.size > 6 * 1024 * 1024) {
+        alert('Banner image must be less than 6MB. Your file is ' + (file.size / 1024 / 1024).toFixed(2) + 'MB');
+        e.target.value = '';
+        return;
+    }
+    
+    // Check image dimensions
+    const img = new Image();
+    img.onload = function() {
+        const width = this.width;
+        const height = this.height;
+        
+        // YouTube banner recommended: 2560 x 1440 (16:9)
+        // Minimum safe area: 1546 x 423
+        if (width < 1546 || height < 423) {
+            alert(`Banner image is too small. Minimum size is 1546 x 423 pixels (safe area). Your image is ${width} x ${height}px.\n\nRecommended size: 2560 x 1440 pixels (16:9 aspect ratio)`);
+            e.target.value = '';
+            return;
+        }
+        
+        // Show preview if valid
         const reader = new FileReader();
         reader.onload = (event) => {
             document.getElementById('editBannerPreview').innerHTML = `<img src="${event.target.result}" alt="Banner Preview" style="width: 100%; height: 100%; object-fit: cover;">`;
         };
         reader.readAsDataURL(file);
-    }
+    };
+    
+    img.onerror = function() {
+        alert('Invalid image file. Please upload a valid image.');
+        e.target.value = '';
+    };
+    
+    img.src = URL.createObjectURL(file);
 });
 
 // Save profile function
