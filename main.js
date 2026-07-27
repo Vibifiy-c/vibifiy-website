@@ -116,8 +116,8 @@ themeToggle.addEventListener('click', () => {
 const navLinks = document.querySelectorAll('.nav-link');
 const pages = document.querySelectorAll('.page');
 
-// Update navigation to include profile
-function navigateTo(pageId) {
+// Enhanced navigation with URL routing
+function navigateTo(pageId, params = {}) {
     const idMap = {
         'dashboard': 'page-dashboard',
         'download': 'page-download',
@@ -127,6 +127,13 @@ function navigateTo(pageId) {
         'profile': 'page-profile',
         'profile-edit': 'page-profile-edit'
     };
+    
+    // Handle dynamic routes
+    if (pageId === 'user-profile' && params.username) {
+        loadUserProfile(params.username);
+        return;
+    }
+    
     const targetId = idMap[pageId] || 'page-dashboard';
     
     pages.forEach(page => page.classList.remove('active'));
@@ -138,13 +145,62 @@ function navigateTo(pageId) {
     const activeLink = document.querySelector(`.nav-link[href="#${pageId}"]`);
     if (activeLink) activeLink.classList.add('active');
     
-    history.pushState({ page: pageId }, '', `#${pageId}`);
+    // Build URL
+    let url = `#${pageId}`;
+    if (params.username) url = `#/profile/${params.username}`;
+    if (params.postId) url = `#/${params.username}/post/${params.postId}`;
+    if (params.activity) url = `#/${params.username}/activity/${params.type}/${params.id}`;
+    
+    history.pushState({ page: pageId, params }, '', url);
     
     if (pageId === 'reviews') loadReviews();
     if (pageId === 'discussions') initDiscussions();
     if (pageId === 'profile') loadProfile();
+    if (pageId === 'profile-edit') loadProfileEdit();
     
     window.scrollTo(0, 0);
+}
+
+// Handle browser back/forward
+window.addEventListener('popstate', (e) => {
+    handleRoute(window.location.hash.substring(1));
+});
+
+// Handle initial load and route changes
+function handleRoute(hash) {
+    if (!hash) {
+        navigateTo('dashboard');
+        return;
+    }
+    
+    const parts = hash.split('/').filter(p => p);
+    
+    if (parts[0] === 'profile' && parts[1]) {
+        // User profile: #/profile/username
+        navigateTo('user-profile', { username: parts[1] });
+    } else if (parts[0] && parts[1] === 'post' && parts[2]) {
+        // Post view: #/username/post/postid
+        loadPost(parts[0], parts[2]);
+    } else if (parts[0] && parts[1] === 'activity') {
+        // Activity: #/username/activity/type/id
+        loadActivity(parts[0], parts[2], parts[3]);
+    } else if (parts[0] === 'dashboard') {
+        navigateTo('dashboard');
+    } else if (parts[0] === 'download') {
+        navigateTo('download');
+    } else if (parts[0] === 'reviews') {
+        navigateTo('reviews');
+    } else if (parts[0] === 'bug') {
+        navigateTo('bug');
+    } else if (parts[0] === 'discussions') {
+        navigateTo('discussions');
+    } else if (parts[0] === 'profile') {
+        navigateTo('profile');
+    } else if (parts[0] === 'profile-edit') {
+        navigateTo('profile-edit');
+    } else {
+        navigateTo('dashboard');
+    }
 }
 
 navLinks.forEach(link => {
@@ -619,6 +675,63 @@ async function uploadProfileImage(file, type) {
     return publicUrl;
 }
 
+// Load profile edit page
+async function loadProfileEdit() {
+    const profile = await getOrCreateProfile();
+    
+    // Update preview
+    document.getElementById('editProfileDisplayName').textContent = profile.display_name || 'Anonymous';
+    document.getElementById('editProfileUsername').querySelector('span').textContent = profile.username;
+    
+    const avatarEl = document.getElementById('editProfileAvatar');
+    if (profile.avatar_url) {
+        avatarEl.innerHTML = `<img src="${profile.avatar_url}" alt="${profile.display_name}">`;
+    } else {
+        avatarEl.innerHTML = (profile.display_name || 'A').charAt(0).toUpperCase();
+    }
+    
+    const bannerEl = document.getElementById('editProfileBanner');
+    if (profile.banner_url) {
+        bannerEl.style.backgroundImage = `url(${profile.banner_url})`;
+    } else {
+        bannerEl.style.backgroundImage = '';
+    }
+    
+    // Load social links preview
+    const socialContainer = document.getElementById('editProfileSocialLinks');
+    socialContainer.innerHTML = '';
+    if (profile.website) socialContainer.innerHTML += `<a href="${profile.website}" target="_blank" class="social-link-badge">🌐 Website</a>`;
+    if (profile.github_url) socialContainer.innerHTML += `<a href="${profile.github_url}" target="_blank" class="social-link-badge">GitHub</a>`;
+    if (profile.twitter_url) socialContainer.innerHTML += `<a href="${profile.twitter_url}" target="_blank" class="social-link-badge">🐦 Twitter</a>`;
+    if (profile.linkedin_url) socialContainer.innerHTML += `<a href="${profile.linkedin_url}" target="_blank" class="social-link-badge"> LinkedIn</a>`;
+    
+    // Load form fields
+    document.getElementById('editDisplayName').value = profile.display_name || '';
+    document.getElementById('editUsername').value = profile.username || '';
+    document.getElementById('editBio').value = profile.bio || '';
+    document.getElementById('editWebsite').value = profile.website || '';
+    document.getElementById('editGithub').value = profile.github_url || '';
+    document.getElementById('editTwitter').value = profile.twitter_url || '';
+    document.getElementById('editLinkedin').value = profile.linkedin_url || '';
+    document.getElementById('editAvatarUrl').value = profile.avatar_url || '';
+    document.getElementById('editBannerUrl').value = profile.banner_url || '';
+    document.getElementById('editReadme').value = profile.readme || '';
+}
+
+// Add custom social link field
+function addCustomSocialLink() {
+    const container = document.getElementById('socialLinksContainer');
+    const index = container.querySelectorAll('.custom-social').length + 1;
+    const div = document.createElement('div');
+    div.className = 'form-group custom-social';
+    div.innerHTML = `
+        <label>Custom Link ${index}</label>
+        <input type="url" class="custom-social-url" placeholder="https://...">
+        <input type="text" class="custom-social-label" placeholder="Link label (e.g., Discord)" style="margin-top: 0.5rem;">
+    `;
+    container.appendChild(div);
+}
+
 document.getElementById('profileForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -631,29 +744,21 @@ document.getElementById('profileForm')?.addEventListener('submit', async (e) => 
         github_url: document.getElementById('editGithub').value,
         twitter_url: document.getElementById('editTwitter').value,
         linkedin_url: document.getElementById('editLinkedin').value,
+        avatar_url: document.getElementById('editAvatarUrl').value,
+        banner_url: document.getElementById('editBannerUrl').value,
+        readme: document.getElementById('editReadme').value,
         updated_at: new Date().toISOString()
     };
     
-    // Handle avatar upload
-    const avatarFile = document.getElementById('editAvatar').files[0];
-    if (avatarFile) {
-        try {
-            updates.avatar_url = await uploadProfileImage(avatarFile, 'avatar');
-        } catch (err) {
-            alert('Error uploading avatar: ' + err.message);
-            return;
-        }
-    }
-    
-    // Handle banner upload
-    const bannerFile = document.getElementById('editBanner').files[0];
-    if (bannerFile) {
-        try {
-            updates.banner_url = await uploadProfileImage(bannerFile, 'banner');
-        } catch (err) {
-            alert('Error uploading banner: ' + err.message);
-            return;
-        }
+    // Collect custom social links
+    const customSocials = [];
+    document.querySelectorAll('.custom-social').forEach(el => {
+        const url = el.querySelector('.custom-social-url').value;
+        const label = el.querySelector('.custom-social-label').value;
+        if (url && label) customSocials.push({ url, label });
+    });
+    if (customSocials.length > 0) {
+        updates.custom_social_links = JSON.stringify(customSocials);
     }
     
     const { error } = await supabase
@@ -667,35 +772,6 @@ document.getElementById('profileForm')?.addEventListener('submit', async (e) => 
         alert('Profile saved!');
         navigateTo('profile');
         loadProfile();
-    }
-});
-
-// Preview images when selected
-document.getElementById('editAvatar')?.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    const preview = document.getElementById('avatarPreview');
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            preview.innerHTML = `<img src="${event.target.result}" alt="Avatar preview">`;
-        };
-        reader.readAsDataURL(file);
-    } else {
-        preview.innerHTML = '';
-    }
-});
-
-document.getElementById('editBanner')?.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    const preview = document.getElementById('bannerPreview');
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            preview.innerHTML = `<img src="${event.target.result}" alt="Banner preview">`;
-        };
-        reader.readAsDataURL(file);
-    } else {
-        preview.innerHTML = '';
     }
 });
 
