@@ -8,6 +8,33 @@ const SUPABASE_ANON_KEY = 'sb_publishable_izSgbuQ0uXigeBJIGfSL0g_ezAivfLI'
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+// Custom Dialog Functions
+function showCustomDialog(title, message, onConfirm) {
+    const dialog = document.getElementById('customDialog');
+    const titleEl = document.getElementById('customDialogTitle');
+    const messageEl = document.getElementById('customDialogMessage');
+    const confirmBtn = document.getElementById('customDialogConfirm');
+    
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    
+    dialog.style.display = 'flex';
+    
+    // Remove old event listeners
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    
+    // Add new event listener
+    newConfirmBtn.addEventListener('click', () => {
+        closeCustomDialog();
+        if (onConfirm) onConfirm();
+    });
+}
+
+function closeCustomDialog() {
+    document.getElementById('customDialog').style.display = 'none';
+}
+
 // ============================================
 // 2. LIVE GITHUB API INTEGRATION
 // ============================================
@@ -283,26 +310,24 @@ async function loadSettingsSection(section) {
             }
         });
         
-        // Delete avatar button (Auto-save)
-        document.getElementById('deleteAvatarBtn')?.addEventListener('click', async () => {
-            if (confirm('Delete your profile photo?')) {
+        // Delete avatar button
+        document.getElementById('deleteAvatarBtn')?.addEventListener('click', () => {
+            showCustomDialog('Delete Profile Photo', 'Are you sure you want to delete your profile photo?', () => {
                 document.getElementById('editProfileAvatar').innerHTML = (profile.display_name || 'A').charAt(0).toUpperCase();
                 document.getElementById('editAvatarFile').value = '';
                 window._deleteAvatar = true;
-                await saveProfile(); // Auto-save immediately
-                loadSettingsSection('account'); // Refresh UI
-            }
+                // Don't auto-save, wait for user to click "Save Changes"
+            });
         });
         
-        // Delete banner button (Auto-save)
-        document.getElementById('deleteBannerBtn')?.addEventListener('click', async () => {
-            if (confirm('Delete your banner image?')) {
+        // Delete banner button
+        document.getElementById('deleteBannerBtn')?.addEventListener('click', () => {
+            showCustomDialog('Delete Banner Image', 'Are you sure you want to delete your banner image?', () => {
                 document.getElementById('editBannerPreview').innerHTML = '<span style="color: var(--text-secondary);">No banner</span>';
                 document.getElementById('editBannerFile').value = '';
                 window._deleteBanner = true;
-                await saveProfile(); // Auto-save immediately
-                loadSettingsSection('account'); // Refresh UI
-            }
+                // Don't auto-save, wait for user to click "Save Changes"
+            });
         });
     } else if (section === 'general') {
         content.innerHTML = `
@@ -377,11 +402,6 @@ async function saveGeneralSettings() {
     alert('Settings saved!');
 }
 
-// Handle browser back/forward
-window.addEventListener('popstate', (e) => {
-    handleRoute(window.location.hash.substring(1));
-});
-
 // Handle initial load and route changes
 function handleRoute(hash) {
     if (!hash) {
@@ -415,6 +435,11 @@ function handleRoute(hash) {
     }
 }
 
+// Handle browser back/forward
+window.addEventListener('popstate', (e) => {
+    handleRoute(window.location.hash.substring(1));
+});
+
 // Nav dropdown toggle
 document.getElementById('navAvatar')?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -433,11 +458,11 @@ document.getElementById('dropdownProfile')?.addEventListener('click', (e) => {
 
 document.getElementById('dropdownLogout')?.addEventListener('click', (e) => {
     e.preventDefault();
-    if (confirm('Clear your local session?')) {
+    showCustomDialog('Logout', 'Clear your local session?', () => {
         localStorage.removeItem('vibifiy_user_id');
         localStorage.removeItem('vibifiy-theme');
         location.reload();
-    }
+    });
 });
 
 // Sidebar link clicks
@@ -456,10 +481,19 @@ navLinks.forEach(link => {
     });
 });
 
-window.addEventListener('popstate', () => {
-    const hash = window.location.hash.substring(1);
-    navigateTo(hash || 'dashboard');
-});
+// Add Custom Social Link
+function addCustomSocialLink() {
+    const container = document.getElementById('socialLinksContainer');
+    const index = container.querySelectorAll('.custom-social').length + 1;
+    const div = document.createElement('div');
+    div.className = 'form-group full-width custom-social';
+    div.innerHTML = `
+        <label>Custom Link ${index}</label>
+        <input type="url" class="custom-social-url" placeholder="https://...">
+        <input type="text" class="custom-social-label" placeholder="Link label (e.g., Discord)" style="margin-top: 0.5rem;">
+    `;
+    container.appendChild(div);
+}
 
 // ============================================
 // 5. SUPABASE: REVIEWS
@@ -795,22 +829,6 @@ document.addEventListener('DOMContentLoaded', () => {
     handleRoute(hash);
 });
 
-document.getElementById('navAvatar')?.addEventListener('click', () => {
-    navigateTo('profile');
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-    renderDownloads();
-    renderDashboard();
-    // Wait a bit for everything to load
-    setTimeout(() => {
-        updateNavAvatar();
-    }, 500);
-    const hash = window.location.hash.substring(1);
-   navigateTo(hash || 'dashboard');
-});
-
-
 // ============================================
 // 9. PROFILE SYSTEM
 // ============================================
@@ -1052,7 +1070,6 @@ async function saveProfile() {
         display_name: document.getElementById('editDisplayName').value,
         username: document.getElementById('editUsername').value.toLowerCase().replace(/[^a-z0-9-]/g, ''),
         bio: document.getElementById('editBio').value,
-        public_email: document.getElementById('editPublicEmail').value,
         website: document.getElementById('editWebsite').value,
         github_url: document.getElementById('editGithub').value,
         twitter_url: document.getElementById('editTwitter').value,
@@ -1080,7 +1097,7 @@ async function saveProfile() {
             const avatarUrl = await uploadProfileImage(avatarFile, 'avatar');
             updates.avatar_url = avatarUrl;
         } catch (err) {
-            alert('Error uploading avatar: ' + err.message);
+            showCustomDialog('Upload Error', 'Error uploading avatar: ' + err.message);
             return;
         }
     }
@@ -1092,7 +1109,7 @@ async function saveProfile() {
             const bannerUrl = await uploadProfileImage(bannerFile, 'banner');
             updates.banner_url = bannerUrl;
         } catch (err) {
-            alert('Error uploading banner: ' + err.message);
+            showCustomDialog('Upload Error', 'Error uploading banner: ' + err.message);
             return;
         }
     }
@@ -1114,57 +1131,14 @@ async function saveProfile() {
         .eq('user_id', userId);
     
     if (error) {
-        alert('Error saving profile: ' + error.message);
+        showCustomDialog('Error', 'Error saving profile: ' + error.message);
     } else {
-        alert('Profile saved!');
-        updateNavAvatar();
-        navigateTo('profile');
-        loadProfile();
+        showCustomDialog('Success', 'Profile saved successfully!', () => {
+            updateNavAvatar();
+            loadSettingsSection('account'); // Stay on settings page
+        });
     }
 }
-
-document.getElementById('profileForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const userId = getUserId();
-    const updates = {
-        display_name: document.getElementById('editDisplayName').value,
-        username: document.getElementById('editUsername').value.toLowerCase().replace(/[^a-z0-9-]/g, ''),
-        bio: document.getElementById('editBio').value,
-        website: document.getElementById('editWebsite').value,
-        github_url: document.getElementById('editGithub').value,
-        twitter_url: document.getElementById('editTwitter').value,
-        linkedin_url: document.getElementById('editLinkedin').value,
-        avatar_url: document.getElementById('editAvatarUrl').value,
-        banner_url: document.getElementById('editBannerUrl').value,
-        readme: document.getElementById('editReadme').value,
-        updated_at: new Date().toISOString()
-    };
-    
-    // Collect custom social links
-    const customSocials = [];
-    document.querySelectorAll('.custom-social').forEach(el => {
-        const url = el.querySelector('.custom-social-url').value;
-        const label = el.querySelector('.custom-social-label').value;
-        if (url && label) customSocials.push({ url, label });
-    });
-    if (customSocials.length > 0) {
-        updates.custom_social_links = JSON.stringify(customSocials);
-    }
-    
-    const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('user_id', userId);
-    
-    if (error) {
-        alert('Error saving profile: ' + error.message);
-    } else {
-        alert('Profile saved!');
-        navigateTo('profile');
-        loadProfile();
-    }
-});
 
 // README Editor
 document.getElementById('editReadmeBtn')?.addEventListener('click', async () => {

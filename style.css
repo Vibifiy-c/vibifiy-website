@@ -1486,3 +1486,86 @@ a:hover {
 .btn-danger:hover {
     background: rgba(229, 57, 53, 0.1) !important;
 }
+
+/* Custom Dialog */
+.custom-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.custom-dialog-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.custom-dialog-content {
+    position: relative;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(160, 32, 240, 0.2);
+    z-index: 1;
+}
+
+.custom-dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.custom-dialog-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.25rem;
+}
+
+.custom-dialog-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    line-height: 1;
+}
+
+.custom-dialog-close:hover {
+    color: var(--text-primary);
+}
+
+.custom-dialog-body {
+    margin-bottom: 1.5rem;
+}
+
+.custom-dialog-body p {
+    margin: 0;
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.custom-dialog-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.custom-dialog-actions .btn-outline,
+.custom-dialog-actions .btn-danger {
+    padding: 0.6rem 1.2rem;
+    min-width: 80px;
+}
