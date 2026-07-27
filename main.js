@@ -194,50 +194,80 @@ async function loadSettingsSection(section) {
     if (section === 'account') {
         content.innerHTML = `
             <h1 class="github-page-title">Public profile</h1>
-            <div class="profile-picture-section">
-                <div class="profile-picture-left">
-                    <h2>Profile picture</h2>
-                    <div class="avatar-preview">
+            
+            <!-- Profile Picture Section -->
+            <div class="settings-section">
+                <h2>Profile picture</h2>
+                <div class="profile-picture-layout">
+                    <div class="profile-picture-preview">
                         <div class="avatar-large" id="editProfileAvatar">
                             ${profile.avatar_url ? `<img src="${profile.avatar_url}" alt="${profile.display_name}">` : (profile.display_name || 'A').charAt(0).toUpperCase()}
                         </div>
                     </div>
-                    ${profile.avatar_url ? `<button type="button" class="btn-danger" id="deleteAvatarBtn" style="margin-top: 0.75rem;">Delete profile photo</button>` : ''}
-                </div>
-                <div class="profile-picture-right">
-                    <h2>Banner image</h2>
-                    <div class="banner-preview" id="editBannerPreview">
-                        ${profile.banner_url ? `<img src="${profile.banner_url}" alt="Banner">` : '<span style="color: var(--text-secondary);">No banner</span>'}
+                    <div class="profile-picture-actions">
+                        <label class="btn-outline" style="cursor: pointer; display: inline-block; margin-right: 0.5rem;">
+                            ️ Edit
+                            <input type="file" id="editAvatarFile" accept="image/*" style="display: none;">
+                        </label>
+                        ${profile.avatar_url ? `<button type="button" class="btn-danger" id="deleteAvatarBtn">️ Delete</button>` : ''}
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <small style="color: var(--text-secondary); display: block;">Recommended: 400x400px (square)</small>
+                            <small style="color: var(--text-secondary); display: block;">Max: 2MB</small>
+                        </div>
                     </div>
-                    ${profile.banner_url ? `<button type="button" class="btn-danger" id="deleteBannerBtn" style="margin-top: 0.75rem;">Delete banner image</button>` : ''}
-                    <div class="form-group">
-                        <label>Upload Banner Image</label>
-                        <input type="file" id="editBannerFile" accept="image/*">
-                        <small style="color: var(--text-secondary); display: block; margin-top: 0.25rem;">Recommended: 2560 x 1440px (16:9)</small>
+                </div>
+            </div>
+            
+            <hr class="settings-divider">
+            
+            <!-- Banner Image Section -->
+            <div class="settings-section">
+                <h2>Banner image</h2>
+                <div class="banner-template-wrapper">
+                    <div class="banner-template-box" id="editBannerPreview">
+                        ${profile.banner_url ? `<img src="${profile.banner_url}" alt="Banner" style="width: 100%; height: 100%; object-fit: cover;">` : `
+                            <div class="banner-template-overlay">
+                                <div class="banner-safe-area"></div>
+                                <span class="banner-template-label">2560 x 1440 (16:9)</span>
+                                <span class="banner-template-sublabel">Safe area: 1546 x 423</span>
+                            </div>
+                        `}
+                    </div>
+                </div>
+                <div class="profile-picture-actions" style="margin-top: 1rem;">
+                    <label class="btn-outline" style="cursor: pointer; display: inline-block; margin-right: 0.5rem;">
+                        ✏️ Edit
+                        <input type="file" id="editBannerFile" accept="image/*" style="display: none;">
+                    </label>
+                    ${profile.banner_url ? `<button type="button" class="btn-danger" id="deleteBannerBtn">🗑️ Delete</button>` : ''}
+                    <div class="form-group" style="margin-top: 0.5rem;">
+                        <small style="color: var(--text-secondary); display: block;">Recommended: 2560 x 1440px (16:9)</small>
                         <small style="color: var(--text-secondary); display: block;">Minimum: 1546 x 423px (safe area)</small>
                         <small style="color: var(--text-secondary); display: block;">Max: 6MB</small>
                     </div>
-                    <h2 style="margin-top: 1.5rem;">Profile picture</h2>
-                    <div class="form-group">
-                        <label>Upload Profile Photo</label>
-                        <input type="file" id="editAvatarFile" accept="image/*">
-                        <small style="color: var(--text-secondary); display: block; margin-top: 0.25rem;">Recommended: 400x400px (square)</small>
-                        <small style="color: var(--text-secondary); display: block;">Max: 2MB</small>
+                </div>
+            </div>
+            
+            <hr class="settings-divider">
+            
+            <!-- Account Info Column Layout -->
+            <div class="settings-section">
+                <div class="account-info-grid">
+                    <div class="form-group full-width">
+                        <h2>Username</h2>
+                        <p class="help-text">Your unique identifier on Vibifiy.</p>
+                        <input type="text" id="editUsername" value="${profile.username || ''}" placeholder="username">
                     </div>
-                </div>
-            </div>
-            <div class="settings-section">
-                <h2>Name</h2>
-                <p class="help-text">Your name may appear around Vibifiy where you are mentioned.</p>
-                <div class="form-group full-width">
-                    <input type="text" id="editDisplayName" value="${profile.display_name || ''}" placeholder="Display Name">
-                </div>
-            </div>
-            <div class="settings-section">
-                <h2>Username</h2>
-                <p class="help-text">This is your unique identifier on Vibifiy.</p>
-                <div class="form-group full-width">
-                    <input type="text" id="editUsername" value="${profile.username || ''}" placeholder="username">
+                    <div class="form-group full-width">
+                        <h2>Name</h2>
+                        <p class="help-text">Your name may appear around Vibifiy where you are mentioned.</p>
+                        <input type="text" id="editDisplayName" value="${profile.display_name || ''}" placeholder="Display Name">
+                    </div>
+                    <div class="form-group full-width">
+                        <h2>Public email</h2>
+                        <p class="help-text">This will be publicly visible (optional).</p>
+                        <input type="email" id="editPublicEmail" value="${profile.public_email || ''}" placeholder="your@email.com">
+                    </div>
                 </div>
             </div>
             <div class="settings-section">
