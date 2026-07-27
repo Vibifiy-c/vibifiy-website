@@ -264,8 +264,9 @@ async function loadSettingsSection(section) {
                     <textarea id="editReadme" rows="8" placeholder="# Hi there!">${profile.readme || ''}</textarea>
                 </div>
             </div>
-            <div class="form-actions">
-                <button type="button" class="btn-primary" onclick="saveProfile()">Save Changes</button>
+            <div class="form-actions" style="flex-direction: column; align-items: stretch;">
+                <button type="button" class="btn-primary" onclick="saveProfile()" style="margin-bottom: 0.5rem;">Save Changes</button>
+                <p id="saveStatusMessage" style="text-align: center; color: var(--accent); font-weight: 600; opacity: 0; transition: opacity 0.3s; margin: 0.5rem 0;">Changes Saved!</p>
                 <button type="button" class="btn-outline" onclick="navigateTo('profile')">Cancel</button>
             </div>
         `;
@@ -1068,6 +1069,15 @@ async function saveProfile() {
     // Show confirmation dialog first
     showCustomDialog('Confirm Save', 'Are you sure you want to save the changes to your account?', async () => {
         const userId = getUserId();
+        const saveBtn = document.querySelector('.form-actions .btn-primary');
+        const statusMsg = document.getElementById('saveStatusMessage');
+        
+        // Disable button and show loading
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+        }
+        
         const updates = {
             display_name: document.getElementById('editDisplayName').value,
             username: document.getElementById('editUsername').value.toLowerCase().replace(/[^a-z0-9-]/g, ''),
@@ -1100,6 +1110,10 @@ async function saveProfile() {
                 updates.avatar_url = avatarUrl;
             } catch (err) {
                 showCustomDialog('Upload Error', 'Error uploading avatar: ' + err.message);
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Save Changes';
+                }
                 return;
             }
         }
@@ -1112,6 +1126,10 @@ async function saveProfile() {
                 updates.banner_url = bannerUrl;
             } catch (err) {
                 showCustomDialog('Upload Error', 'Error uploading banner: ' + err.message);
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Save Changes';
+                }
                 return;
             }
         }
@@ -1134,11 +1152,29 @@ async function saveProfile() {
         
         if (error) {
             showCustomDialog('Error', 'Error saving profile: ' + error.message);
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Changes';
+            }
         } else {
-            showCustomDialog('Success', 'Profile saved successfully!', () => {
-                updateNavAvatar();
-                loadSettingsSection('account'); // Stay on settings page
-            });
+            // Show success message
+            if (statusMsg) {
+                statusMsg.textContent = 'Changes Saved!';
+                statusMsg.style.opacity = '1';
+            }
+            
+            // Re-enable button after delay
+            setTimeout(() => {
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Save Changes';
+                }
+                if (statusMsg) {
+                    statusMsg.style.opacity = '0';
+                }
+            }, 3000);
+            
+            updateNavAvatar();
         }
     });
 }
