@@ -2396,3 +2396,69 @@ a:hover {
         margin-left: 0.75rem;
     }
 }
+
+/* Clickable Post Card */
+.discussion-card-clickable {
+    cursor: pointer;
+    transition: background 0.2s;
+    padding: 0.5rem;
+    border-radius: 8px;
+    margin: -0.5rem;
+}
+
+.discussion-card-clickable:hover {
+    background: rgba(160, 32, 240, 0.05);
+}
+
+.discussion-card-clickable:hover .discussion-title {
+    color: var(--accent);
+}
+
+.discussion-footer {
+    display: flex;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    margin-top: 0.5rem;
+}
+
+/* Post View Page - Reddit Style */
+.post-view-actions {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin: 1.5rem 0;
+}
+
+.post-view-action-btn {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+
+.post-view-action-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.post-view-action-btn.liked {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(160, 32, 240, 0.1);
+}
+
+.post-view-action-btn.reposted {
+    color: #4caf50;
+    border-color: #4caf50;
+    background: rgba(76, 175, 80, 0.1);
+}

@@ -854,19 +854,22 @@ function renderDiscussionPost(discussion) {
     }
     
     return `<article class="discussion-card" data-discussion-id="${discussion.id}">
-        <div class="discussion-header">
-            <div class="discussion-author">
-                <div class="author-avatar">${discussion.user_name.charAt(0).toUpperCase()}</div>
-                <div><h4>${escapeHtml(discussion.user_name)}</h4><span class="discussion-date">${date}</span></div>
+        <div class="discussion-card-clickable" onclick="navigateTo('post-view', { postId: '${discussion.id}' })">
+            <div class="discussion-header">
+                <div class="discussion-author">
+                    <div class="author-avatar">${discussion.user_name.charAt(0).toUpperCase()}</div>
+                    <div><h4>${escapeHtml(discussion.user_name)}</h4><span class="discussion-date">${date}</span></div>
+                </div>
+                ${isOwner ? `<div class="discussion-actions"><button class="btn-icon" onclick="event.stopPropagation(); deleteDiscussion('${discussion.id}')">️</button></div>` : ''}
             </div>
-            ${isOwner ? `<div class="discussion-actions"><button class="btn-icon" onclick="deleteDiscussion('${discussion.id}')">🗑️</button></div>` : ''}
+            <h3 class="discussion-title">${escapeHtml(discussion.title)}</h3>
+            <div class="discussion-content">${escapeHtml(discussion.content)}</div>
+            ${imagesHtml}${githubCardHtml}
         </div>
-        <h3 class="discussion-title">${escapeHtml(discussion.title)}</h3>
-        <div class="discussion-content">${escapeHtml(discussion.content)}</div>
-        ${imagesHtml}${githubCardHtml}
         <div class="discussion-footer">
-            <button class="discussion-action-btn" onclick="repostDiscussion('${discussion.id}')">🔁 Repost</button>
-            <button class="discussion-action-btn" onclick="navigateTo('post-view', { postId: '${discussion.id}' })"> Comments</button>
+            <button class="discussion-action-btn" onclick="event.stopPropagation(); repostDiscussion('${discussion.id}')">🔁 Repost</button>
+            <button class="discussion-action-btn" onclick="event.stopPropagation(); navigateTo('post-view', { postId: '${discussion.id}' })"> Comments</button>
+        </div>
         </div>
         <div id="comments-${discussion.id}" class="comments-section" style="display: none;">
             <div class="comment-form">
@@ -1057,42 +1060,26 @@ document.getElementById('submitDiscussionBtn')?.addEventListener('click', async 
 
 // Placeholder functions for discussion actions (to prevent console errors)
 window.deleteDiscussion = async (id) => {
-    if (!confirm('Delete this discussion? This cannot be undone.')) return;
-    
-    try {
-        // Remove from UI immediately for a smooth feel
-        const element = document.querySelector(`[data-discussion-id="${id}"]`);
-        if (element) {
-            element.style.transition = 'all 0.3s ease';
-            element.style.opacity = '0';
-            element.style.transform = 'translateY(-20px)';
-            element.style.pointerEvents = 'none';
-        }
-        
-        // Delete from database
-        const { error } = await supabase.from('discussions').delete().eq('id', id);
-        
-        if (error) {
-            console.error('Delete error:', error);
-            alert('Failed to delete. Check console for details.');
-            // Revert UI if it failed
-            if (element) {
-                element.style.opacity = '1';
-                element.style.transform = 'translateY(0)';
-                element.style.pointerEvents = 'auto';
+    showCustomDialog('Delete Post', 'Are you sure you want to delete this post? This cannot be undone.', async () => {
+        try {
+            // First, nullify any reposts that reference this post
+            await supabase.from('discussions').update({ repost_of: null }).eq('repost_of', id);
+            
+            // Also delete any comments on this post
+            await supabase.from('comments').delete().eq('discussion_id', id);
+            
+            // Now delete the post
+            const { error } = await supabase.from('discussions').delete().eq('id', id);
+            
+            if (error) {
+                showCustomDialog('Error', 'Failed to delete: ' + error.message);
+            } else {
+                await initDiscussions();
             }
-        } else {
-            // Fully remove from DOM after animation
-            setTimeout(() => {
-                if (element) element.remove();
-                // Reload if it was the last one
-                const remaining = document.querySelectorAll('.discussion-card');
-                if (remaining.length === 0) initDiscussions();
-            }, 300);
+        } catch (err) {
+            showCustomDialog('Error', 'Failed to delete: ' + err.message);
         }
-    } catch (err) {
-        console.error(err);
-    }
+    });
 };
 window.repostDiscussion = async (id) => {
     showCustomDialog('Repost Discussion', 'Repost this discussion to your profile?', async () => {
@@ -1801,8 +1788,18 @@ async function loadPostView(postId) {
         <div class="post-view-body">${renderMarkdown(post.content)}</div>
         ${imagesHtml}
         ${githubCardHtml}
+        <div class="post-view-actions">
+            <button class="post-view-action-btn" id="likePostBtn" onclick="likePost('${post.id}')">
+                <span>👍</span> <span id="likeCount">0</span> Likes
+            </button>
+            <button class="post-view-action-btn" id="repostPostBtn" onclick="repostFromView('${post.id}')">
+                <span>🔁</span> Repost
+            </button>
+            <button class="post-view-action-btn" onclick="document.getElementById('viewCommentText').focus()">
+                <span>💬</span> Comment
+            </button>
+        </div>
         <div class="post-view-meta">
-            <span>⭐ 0 likes</span>
             <span>💬 <span id="commentCountBadge">0</span> comments</span>
         </div>
     `;
@@ -1978,11 +1975,73 @@ document.getElementById('submitViewCommentBtn')?.addEventListener('click', async
     }
 });
 
+// Like post (stored in localStorage for now)
+window.likePost = (postId) => {
+    const likes = JSON.parse(localStorage.getItem('liked_posts') || '{}');
+    const btn = document.getElementById('likePostBtn');
+    const countEl = document.getElementById('likeCount');
+    
+    if (likes[postId]) {
+        delete likes[postId];
+        btn.classList.remove('liked');
+    } else {
+        likes[postId] = true;
+        btn.classList.add('liked');
+    }
+    
+    localStorage.setItem('liked_posts', JSON.stringify(likes));
+    // Update count (simplified - just toggle for now)
+    if (countEl) {
+        const current = parseInt(countEl.textContent) || 0;
+        countEl.textContent = likes[postId] ? current + 1 : Math.max(0, current - 1);
+    }
+};
+
+// Repost from view
+window.repostFromView = async (postId) => {
+    showCustomDialog('Repost', 'Repost this to your profile?', async () => {
+        const profile = await getOrCreateProfile();
+        const { data: original } = await supabase.from('discussions').select('*').eq('id', postId).single();
+        
+        if (!original) {
+            showCustomDialog('Error', 'Post not found');
+            return;
+        }
+        
+        const { error } = await supabase.from('discussions').insert([{
+            user_name: profile.display_name || 'Anonymous',
+            user_id: getUserId(),
+            title: original.title,
+            content: original.content,
+            github_link: original.github_link,
+            images: original.images,
+            repost_of: postId
+        }]);
+        
+        if (error) {
+            showCustomDialog('Error', 'Failed to repost: ' + error.message);
+        } else {
+            showCustomDialog('Success', 'Reposted!');
+            const btn = document.getElementById('repostPostBtn');
+            if (btn) btn.classList.add('reposted');
+        }
+    });
+};
+
 
 // Expose to window for inline onclick handlers (ES modules don't expose by default)
 window.saveProfile = saveProfile;
 window.addCustomSocialLink = addCustomSocialLink;
 window.closeCustomDialog = closeCustomDialog;
+window.navigateTo = navigateTo;
+window.handleRoute = handleRoute;
+window.initDiscussions = initDiscussions;
+window.loadProfile = loadProfile;
+window.loadReviews = loadReviews;
+window.renderDownloads = renderDownloads;
+window.renderDashboard = renderDashboard;
+window.updateNavAvatar = updateNavAvatar;
+window.loadSettingsSection = loadSettingsSection;
 
 // README Editor
 document.getElementById('editReadmeBtn')?.addEventListener('click', async () => {
