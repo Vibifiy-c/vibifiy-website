@@ -245,6 +245,18 @@
                             <label>LinkedIn</label>
                             <input type="url" id="editLinkedin" placeholder="https://linkedin.com/in/username">
                         </div>
+                        <div class="form-group">
+                            <label>Profile Photo</label>
+                            <input type="file" id="editAvatar" accept="image/*">
+                            <small style="color: var(--text-secondary);">Upload a square image (recommended 400x400px)</small>
+                            <div id="avatarPreview" style="margin-top: 0.5rem;"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Banner Image</label>
+                            <input type="file" id="editBanner" accept="image/*">
+                            <small style="color: var(--text-secondary);">Upload a wide image (recommended 1500x500px)</small>
+                            <div id="bannerPreview" style="margin-top: 0.5rem;"></div>
+                        </div>
                         <div style="display: flex; gap: 1rem; margin-top: 2rem;">
                             <button type="submit" class="btn-primary">Save Changes</button>
                             <button type="button" class="btn-secondary" onclick="navigateTo('profile')" style="padding: 0.75rem 1.5rem; background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; cursor: pointer;">Cancel</button>

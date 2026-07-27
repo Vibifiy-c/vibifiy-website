@@ -503,7 +503,22 @@ async function loadProfile() {
     // Update profile page
     document.getElementById('profileDisplayName').textContent = profile.display_name || 'Anonymous';
     document.getElementById('profileUsername').querySelector('span').textContent = profile.username;
-    document.getElementById('profileAvatar').textContent = (profile.display_name || 'A').charAt(0).toUpperCase();
+    
+    // Handle avatar - show image if exists, otherwise show letter
+    const avatarEl = document.getElementById('profileAvatar');
+    if (profile.avatar_url) {
+        avatarEl.innerHTML = `<img src="${profile.avatar_url}" alt="${profile.display_name}">`;
+    } else {
+        avatarEl.innerHTML = (profile.display_name || 'A').charAt(0).toUpperCase();
+    }
+    
+    // Handle banner - show image if exists, otherwise gradient
+    const bannerEl = document.getElementById('profileBanner');
+    if (profile.banner_url) {
+        bannerEl.style.backgroundImage = `url(${profile.banner_url})`;
+    } else {
+        bannerEl.style.backgroundImage = '';
+    }
     
     // Load social links
     const linksContainer = document.getElementById('profileLinks').querySelector('.links-grid');
@@ -565,6 +580,8 @@ function renderMarkdown(text) {
         .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>')
         .replace(/^- (.*$)/gim, '<ul><li>$1</li></ul>')
         .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+        .replace(/<img\s+src="([^"]+)"\s*\/?>/gim, '<img src="$1" alt="image">')
+        .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">')
         .replace(/\n\n/g, '</p><p>')
         .replace(/\n/g, '<br>');
 }
@@ -584,6 +601,25 @@ document.getElementById('editProfileBtn')?.addEventListener('click', async () =>
     navigateTo('profile-edit');
 });
 
+// Upload profile image helper
+async function uploadProfileImage(file, type) {
+    const userId = getUserId();
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}_${type}_${Date.now()}.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage
+        .from('profile-images')
+        .upload(fileName, file, { cacheControl: '3600', upsert: true });
+    
+    if (uploadError) throw uploadError;
+    
+    const { data: { publicUrl } } = supabase.storage
+        .from('profile-images')
+        .getPublicUrl(fileName);
+    
+    return publicUrl;
+}
+
 document.getElementById('profileForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -599,6 +635,28 @@ document.getElementById('profileForm')?.addEventListener('submit', async (e) => 
         updated_at: new Date().toISOString()
     };
     
+    // Handle avatar upload
+    const avatarFile = document.getElementById('editAvatar').files[0];
+    if (avatarFile) {
+        try {
+            updates.avatar_url = await uploadProfileImage(avatarFile, 'avatar');
+        } catch (err) {
+            alert('Error uploading avatar: ' + err.message);
+            return;
+        }
+    }
+    
+    // Handle banner upload
+    const bannerFile = document.getElementById('editBanner').files[0];
+    if (bannerFile) {
+        try {
+            updates.banner_url = await uploadProfileImage(bannerFile, 'banner');
+        } catch (err) {
+            alert('Error uploading banner: ' + err.message);
+            return;
+        }
+    }
+    
     const { error } = await supabase
         .from('profiles')
         .update(updates)
@@ -610,6 +668,35 @@ document.getElementById('profileForm')?.addEventListener('submit', async (e) => 
         alert('Profile saved!');
         navigateTo('profile');
         loadProfile();
+    }
+});
+
+// Preview images when selected
+document.getElementById('editAvatar')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    const preview = document.getElementById('avatarPreview');
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            preview.innerHTML = `<img src="${event.target.result}" alt="Avatar preview">`;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.innerHTML = '';
+    }
+});
+
+document.getElementById('editBanner')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    const preview = document.getElementById('bannerPreview');
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            preview.innerHTML = `<img src="${event.target.result}" alt="Banner preview">`;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.innerHTML = '';
     }
 });
 
