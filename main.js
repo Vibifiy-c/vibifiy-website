@@ -1140,6 +1140,11 @@ async function saveProfile() {
     }
 }
 
+// Expose to window for inline onclick handlers (ES modules don't expose by default)
+window.saveProfile = saveProfile;
+window.addCustomSocialLink = addCustomSocialLink;
+window.closeCustomDialog = closeCustomDialog;
+
 // README Editor
 document.getElementById('editReadmeBtn')?.addEventListener('click', async () => {
     const profile = await getOrCreateProfile();
