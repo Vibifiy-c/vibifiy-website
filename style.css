@@ -4,9 +4,9 @@
     --border: #e9ecef; --shadow: 0 4px 6px rgba(0, 0, 0, 0.05); --error: #e74c3c; --success: #2ecc71;
 }
 [data-theme="dark"] {
-    --bg-primary: #121212; --bg-secondary: #1e1e1e; --text-primary: #e9ecef;
-    --text-secondary: #adb5bd; --accent: #a29bfe; --accent-hover: #8e84f5;
-    --border: #2d2d2d; --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --bg-primary: #0d1117; --bg-secondary: #161b22; --text-primary: #c9d1d9;
+    --text-secondary: #8b949e; --accent: #58a6ff; --accent-hover: #1f6feb;
+    --border: #30363d; --shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.3s, color 0.3s; }
@@ -880,4 +880,208 @@ footer a { color: var(--accent); text-decoration: none; }
 
 #socialLinksContainer .form-group {
     margin-bottom: 1rem;
+}
+
+/* GitHub-Style Settings Layout */
+.github-settings-layout {
+    display: flex;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    gap: 2rem;
+}
+
+.github-sidebar {
+    width: 260px;
+    flex-shrink: 0;
+}
+
+.sidebar-section h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+    padding-left: 0.75rem;
+}
+
+.sidebar-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-link {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-radius: 6px;
+    margin-bottom: 0.25rem;
+    transition: all 0.2s;
+}
+
+.sidebar-link:hover {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.sidebar-link.active {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.github-settings-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.github-page-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.settings-section {
+    margin-bottom: 2.5rem;
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.settings-section h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.help-text {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.help-text a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.help-text a:hover {
+    text-decoration: underline;
+}
+
+.profile-picture-section {
+    display: flex;
+    gap: 3rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.profile-picture-left {
+    flex: 1;
+}
+
+.profile-picture-left h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.avatar-preview {
+    margin-top: 1rem;
+}
+
+.avatar-large {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: var(--bg-primary);
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    overflow: hidden;
+}
+
+.avatar-large img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-picture-right {
+    flex: 2;
+}
+
+.form-group.full-width {
+    margin-bottom: 1rem;
+}
+
+.form-group.full-width label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.form-group.full-width input,
+.form-group.full-width textarea {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+.form-group.full-width input:focus,
+.form-group.full-width textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-outline:hover {
+    border-color: var(--text-secondary);
+    background: var(--bg-primary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .github-settings-layout {
+        flex-direction: column;
+    }
+    
+    .github-sidebar {
+        width: 100%;
+    }
+    
+    .profile-picture-section {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
 }

@@ -675,14 +675,12 @@ async function uploadProfileImage(file, type) {
     return publicUrl;
 }
 
+
 // Load profile edit page
 async function loadProfileEdit() {
     const profile = await getOrCreateProfile();
     
-    // Update preview
-    document.getElementById('editProfileDisplayName').textContent = profile.display_name || 'Anonymous';
-    document.getElementById('editProfileUsername').querySelector('span').textContent = profile.username;
-    
+    // Update avatar preview
     const avatarEl = document.getElementById('editProfileAvatar');
     if (profile.avatar_url) {
         avatarEl.innerHTML = `<img src="${profile.avatar_url}" alt="${profile.display_name}">`;
@@ -690,25 +688,11 @@ async function loadProfileEdit() {
         avatarEl.innerHTML = (profile.display_name || 'A').charAt(0).toUpperCase();
     }
     
-    const bannerEl = document.getElementById('editProfileBanner');
-    if (profile.banner_url) {
-        bannerEl.style.backgroundImage = `url(${profile.banner_url})`;
-    } else {
-        bannerEl.style.backgroundImage = '';
-    }
-    
-    // Load social links preview
-    const socialContainer = document.getElementById('editProfileSocialLinks');
-    socialContainer.innerHTML = '';
-    if (profile.website) socialContainer.innerHTML += `<a href="${profile.website}" target="_blank" class="social-link-badge">🌐 Website</a>`;
-    if (profile.github_url) socialContainer.innerHTML += `<a href="${profile.github_url}" target="_blank" class="social-link-badge">GitHub</a>`;
-    if (profile.twitter_url) socialContainer.innerHTML += `<a href="${profile.twitter_url}" target="_blank" class="social-link-badge">🐦 Twitter</a>`;
-    if (profile.linkedin_url) socialContainer.innerHTML += `<a href="${profile.linkedin_url}" target="_blank" class="social-link-badge"> LinkedIn</a>`;
-    
     // Load form fields
     document.getElementById('editDisplayName').value = profile.display_name || '';
     document.getElementById('editUsername').value = profile.username || '';
     document.getElementById('editBio').value = profile.bio || '';
+    document.getElementById('editPublicEmail').value = profile.public_email || '';
     document.getElementById('editWebsite').value = profile.website || '';
     document.getElementById('editGithub').value = profile.github_url || '';
     document.getElementById('editTwitter').value = profile.twitter_url || '';
@@ -718,18 +702,47 @@ async function loadProfileEdit() {
     document.getElementById('editReadme').value = profile.readme || '';
 }
 
-// Add custom social link field
-function addCustomSocialLink() {
-    const container = document.getElementById('socialLinksContainer');
-    const index = container.querySelectorAll('.custom-social').length + 1;
-    const div = document.createElement('div');
-    div.className = 'form-group custom-social';
-    div.innerHTML = `
-        <label>Custom Link ${index}</label>
-        <input type="url" class="custom-social-url" placeholder="https://...">
-        <input type="text" class="custom-social-label" placeholder="Link label (e.g., Discord)" style="margin-top: 0.5rem;">
-    `;
-    container.appendChild(div);
+// Save profile function
+async function saveProfile() {
+    const userId = getUserId();
+    const updates = {
+        display_name: document.getElementById('editDisplayName').value,
+        username: document.getElementById('editUsername').value.toLowerCase().replace(/[^a-z0-9-]/g, ''),
+        bio: document.getElementById('editBio').value,
+        public_email: document.getElementById('editPublicEmail').value,
+        website: document.getElementById('editWebsite').value,
+        github_url: document.getElementById('editGithub').value,
+        twitter_url: document.getElementById('editTwitter').value,
+        linkedin_url: document.getElementById('editLinkedin').value,
+        avatar_url: document.getElementById('editAvatarUrl').value,
+        banner_url: document.getElementById('editBannerUrl').value,
+        readme: document.getElementById('editReadme').value,
+        updated_at: new Date().toISOString()
+    };
+    
+    // Collect custom social links
+    const customSocials = [];
+    document.querySelectorAll('.custom-social').forEach(el => {
+        const url = el.querySelector('.custom-social-url').value;
+        const label = el.querySelector('.custom-social-label').value;
+        if (url && label) customSocials.push({ url, label });
+    });
+    if (customSocials.length > 0) {
+        updates.custom_social_links = JSON.stringify(customSocials);
+    }
+    
+    const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('user_id', userId);
+    
+    if (error) {
+        alert('Error saving profile: ' + error.message);
+    } else {
+        alert('Profile saved!');
+        navigateTo('profile');
+        loadProfile();
+    }
 }
 
 document.getElementById('profileForm')?.addEventListener('submit', async (e) => {
