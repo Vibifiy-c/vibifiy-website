@@ -1353,3 +1353,39 @@ a {
 a:hover {
     text-decoration: underline;
 }
+
+/* Nav Avatar */
+.nav-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--bg-primary);
+    border: 2px solid var(--border);
+    cursor: pointer;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: var(--accent);
+    transition: all 0.2s;
+    margin-left: 0.5rem;
+}
+
+.nav-avatar:hover {
+    border-color: var(--accent);
+    transform: scale(1.05);
+}
+
+.nav-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Banner Preview */
+.banner-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}

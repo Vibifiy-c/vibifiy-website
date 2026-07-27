@@ -513,9 +513,31 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Update nav avatar
+async function updateNavAvatar() {
+    const profile = await getOrCreateProfile();
+    const letter = document.getElementById('navAvatarLetter');
+    const img = document.getElementById('navAvatarImg');
+    
+    if (profile.avatar_url) {
+        img.src = profile.avatar_url;
+        img.style.display = 'block';
+        letter.style.display = 'none';
+    } else {
+        letter.textContent = (profile.display_name || 'U').charAt(0).toUpperCase();
+        img.style.display = 'none';
+        letter.style.display = 'block';
+    }
+}
+
+document.getElementById('navAvatar')?.addEventListener('click', () => {
+    navigateTo('profile');
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     renderDownloads();
     renderDashboard();
+    updateNavAvatar();
     const hash = window.location.hash.substring(1);
     navigateTo(hash || 'dashboard');
 });
@@ -705,10 +727,35 @@ async function loadProfileEdit() {
     document.getElementById('editGithub').value = profile.github_url || '';
     document.getElementById('editTwitter').value = profile.twitter_url || '';
     document.getElementById('editLinkedin').value = profile.linkedin_url || '';
-    document.getElementById('editAvatarUrl').value = profile.avatar_url || '';
-    document.getElementById('editBannerUrl').value = profile.banner_url || '';
     document.getElementById('editReadme').value = profile.readme || '';
+    
+    // Reset file inputs
+    document.getElementById('editAvatarFile').value = '';
+    document.getElementById('editBannerFile').value = '';
 }
+
+// Preview uploaded files
+document.getElementById('editAvatarFile')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            document.getElementById('editProfileAvatar').innerHTML = `<img src="${event.target.result}" alt="Preview">`;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+document.getElementById('editBannerFile')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            document.getElementById('editBannerPreview').innerHTML = `<img src="${event.target.result}" alt="Banner Preview" style="width: 100%; height: 100%; object-fit: cover;">`;
+        };
+        reader.readAsDataURL(file);
+    }
+});
 
 // Save profile function
 async function saveProfile() {
@@ -722,11 +769,33 @@ async function saveProfile() {
         github_url: document.getElementById('editGithub').value,
         twitter_url: document.getElementById('editTwitter').value,
         linkedin_url: document.getElementById('editLinkedin').value,
-        avatar_url: document.getElementById('editAvatarUrl').value,
-        banner_url: document.getElementById('editBannerUrl').value,
         readme: document.getElementById('editReadme').value,
         updated_at: new Date().toISOString()
     };
+    
+    // Upload avatar if file selected
+    const avatarFile = document.getElementById('editAvatarFile').files[0];
+    if (avatarFile) {
+        try {
+            const avatarUrl = await uploadProfileImage(avatarFile, 'avatar');
+            updates.avatar_url = avatarUrl;
+        } catch (err) {
+            alert('Error uploading avatar: ' + err.message);
+            return;
+        }
+    }
+    
+    // Upload banner if file selected
+    const bannerFile = document.getElementById('editBannerFile').files[0];
+    if (bannerFile) {
+        try {
+            const bannerUrl = await uploadProfileImage(bannerFile, 'banner');
+            updates.banner_url = bannerUrl;
+        } catch (err) {
+            alert('Error uploading banner: ' + err.message);
+            return;
+        }
+    }
     
     // Collect custom social links
     const customSocials = [];
@@ -748,6 +817,7 @@ async function saveProfile() {
         alert('Error saving profile: ' + error.message);
     } else {
         alert('Profile saved!');
+        updateNavAvatar();
         navigateTo('profile');
         loadProfile();
     }

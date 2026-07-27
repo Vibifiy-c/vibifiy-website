@@ -21,12 +21,15 @@
             <a href="#reviews" class="nav-link">Reviews</a>
             <a href="#bug" class="nav-link">Bug Report</a>
             <a href="#discussions" class="nav-link">Discussions</a>
-            <a href="#profile" class="nav-link">Profile</a>
         </div>
 
         <div class="controls">
             <input type="text" id="searchInput" placeholder="Search projects..." aria-label="Search projects">
-            <button id="themeToggle" aria-label="Toggle dark mode">🌙</button>
+            <button id="themeToggle" aria-label="Toggle dark mode"></button>
+            <div class="nav-avatar" id="navAvatar" title="My Profile">
+                <span id="navAvatarLetter">?</span>
+                <img id="navAvatarImg" src="" alt="" style="display: none;">
+            </div>
         </div>
     </nav>
 
@@ -236,12 +239,15 @@
                                 <span style="color: var(--text-secondary);">No banner</span>
                             </div>
                             <div class="form-group">
-                                <label>Profile Photo URL</label>
-                                <input type="url" id="editAvatarUrl" placeholder="https://example.com/avatar.png">
+                                <label>Upload Banner Image</label>
+                                <input type="file" id="editBannerFile" accept="image/*" style="padding: 0.5rem; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); width: 100%;">
+                                <small style="color: var(--text-secondary);">Recommended: 1500x500px</small>
                             </div>
+                            <h2 style="margin-top: 1.5rem;">Profile picture</h2>
                             <div class="form-group">
-                                <label>Banner Image URL</label>
-                                <input type="url" id="editBannerUrl" placeholder="https://example.com/banner.png">
+                                <label>Upload Profile Photo</label>
+                                <input type="file" id="editAvatarFile" accept="image/*" style="padding: 0.5rem; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); width: 100%;">
+                                <small style="color: var(--text-secondary);">Recommended: 400x400px (square)</small>
                             </div>
                         </div>
                     </div>
