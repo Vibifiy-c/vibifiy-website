@@ -579,9 +579,8 @@ function renderMarkdown(text) {
         .replace(/`(.*?)`/g, '<code>$1</code>')
         .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>')
         .replace(/^- (.*$)/gim, '<ul><li>$1</li></ul>')
-        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
-        .replace(/<img\s+src="([^"]+)"\s*\/?>/gim, '<img src="$1" alt="image">')
         .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">')
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
         .replace(/\n\n/g, '</p><p>')
         .replace(/\n/g, '<br>');
 }
