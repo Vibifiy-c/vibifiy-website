@@ -515,18 +515,27 @@ function escapeHtml(text) {
 
 // Update nav avatar
 async function updateNavAvatar() {
-    const profile = await getOrCreateProfile();
-    const letter = document.getElementById('navAvatarLetter');
-    const img = document.getElementById('navAvatarImg');
-    
-    if (profile.avatar_url) {
-        img.src = profile.avatar_url;
-        img.style.display = 'block';
-        letter.style.display = 'none';
-    } else {
-        letter.textContent = (profile.display_name || 'U').charAt(0).toUpperCase();
-        img.style.display = 'none';
-        letter.style.display = 'block';
+    try {
+        const profile = await getOrCreateProfile();
+        const letter = document.getElementById('navAvatarLetter');
+        const img = document.getElementById('navAvatarImg');
+        
+        if (!letter || !img) return;
+        
+        if (profile.avatar_url) {
+            img.src = profile.avatar_url;
+            img.style.display = 'block';
+            letter.style.display = 'none';
+        } else {
+            const displayName = profile.display_name || 'User';
+            letter.textContent = displayName.charAt(0).toUpperCase();
+            img.style.display = 'none';
+            letter.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error updating nav avatar:', error);
+        const letter = document.getElementById('navAvatarLetter');
+        if (letter) letter.textContent = 'U';
     }
 }
 
@@ -537,9 +546,12 @@ document.getElementById('navAvatar')?.addEventListener('click', () => {
 document.addEventListener('DOMContentLoaded', () => {
     renderDownloads();
     renderDashboard();
-    updateNavAvatar();
+    // Wait a bit for everything to load
+    setTimeout(() => {
+        updateNavAvatar();
+    }, 500);
     const hash = window.location.hash.substring(1);
-    navigateTo(hash || 'dashboard');
+   navigateTo(hash || 'dashboard');
 });
 
 
