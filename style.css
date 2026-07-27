@@ -1389,3 +1389,83 @@ a:hover {
     height: 100%;
     object-fit: cover;
 }
+
+/* Nav Dropdown */
+.nav-avatar-wrapper {
+    position: relative;
+}
+
+.nav-dropdown {
+    position: absolute;
+    top: 45px;
+    right: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    min-width: 200px;
+    z-index: 1000;
+    display: none;
+    overflow: hidden;
+}
+
+.nav-dropdown.show {
+    display: block;
+}
+
+.dropdown-item {
+    display: block;
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+
+.dropdown-item:hover {
+    background: var(--bg-primary);
+    color: var(--accent);
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0.5rem 0;
+}
+
+/* Settings Activity Section */
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.activity-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.activity-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.activity-card-date {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.activity-card-content {
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.empty-activity {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-secondary);
+}

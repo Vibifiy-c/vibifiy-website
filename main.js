@@ -125,14 +125,9 @@ function navigateTo(pageId, params = {}) {
         'bug': 'page-bug',
         'discussions': 'page-discussions',
         'profile': 'page-profile',
-        'profile-edit': 'page-profile-edit'
+        'profile-edit': 'page-profile-edit',
+        'settings': 'page-settings'
     };
-    
-    // Handle dynamic routes
-    if (pageId === 'user-profile' && params.username) {
-        loadUserProfile(params.username);
-        return;
-    }
     
     const targetId = idMap[pageId] || 'page-dashboard';
     
@@ -145,20 +140,196 @@ function navigateTo(pageId, params = {}) {
     const activeLink = document.querySelector(`.nav-link[href="#${pageId}"]`);
     if (activeLink) activeLink.classList.add('active');
     
-    // Build URL
-    let url = `#${pageId}`;
-    if (params.username) url = `#/profile/${params.username}`;
-    if (params.postId) url = `#/${params.username}/post/${params.postId}`;
-    if (params.activity) url = `#/${params.username}/activity/${params.type}/${params.id}`;
-    
-    history.pushState({ page: pageId, params }, '', url);
+    history.pushState({ page: pageId, params }, '', `#${pageId}`);
     
     if (pageId === 'reviews') loadReviews();
     if (pageId === 'discussions') initDiscussions();
     if (pageId === 'profile') loadProfile();
     if (pageId === 'profile-edit') loadProfileEdit();
+    if (pageId === 'settings') loadSettingsSection('account');
     
     window.scrollTo(0, 0);
+}
+
+// Load settings section
+async function loadSettingsSection(section) {
+    const content = document.getElementById('settingsContent');
+    if (!content) return;
+    
+    // Update sidebar active state
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+        link.classList.remove('active');
+        if (link.dataset.section === section) link.classList.add('active');
+    });
+    
+    const profile = await getOrCreateProfile();
+    
+    if (section === 'account') {
+        content.innerHTML = `
+            <h1 class="github-page-title">Public profile</h1>
+            <div class="profile-picture-section">
+                <div class="profile-picture-left">
+                    <h2>Profile picture</h2>
+                    <div class="avatar-preview">
+                        <div class="avatar-large" id="editProfileAvatar">
+                            ${profile.avatar_url ? `<img src="${profile.avatar_url}" alt="${profile.display_name}">` : (profile.display_name || 'A').charAt(0).toUpperCase()}
+                        </div>
+                    </div>
+                </div>
+                <div class="profile-picture-right">
+                    <h2>Banner image</h2>
+                    <div class="banner-preview" id="editBannerPreview">
+                        ${profile.banner_url ? `<img src="${profile.banner_url}" alt="Banner">` : '<span style="color: var(--text-secondary);">No banner</span>'}
+                    </div>
+                    <div class="form-group">
+                        <label>Upload Banner Image</label>
+                        <input type="file" id="editBannerFile" accept="image/*">
+                        <small style="color: var(--text-secondary);">Recommended: 1500x500px</small>
+                    </div>
+                    <h2 style="margin-top: 1.5rem;">Profile picture</h2>
+                    <div class="form-group">
+                        <label>Upload Profile Photo</label>
+                        <input type="file" id="editAvatarFile" accept="image/*">
+                        <small style="color: var(--text-secondary);">Recommended: 400x400px (square)</small>
+                    </div>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h2>Name</h2>
+                <p class="help-text">Your name may appear around Vibifiy where you are mentioned.</p>
+                <div class="form-group full-width">
+                    <input type="text" id="editDisplayName" value="${profile.display_name || ''}" placeholder="Display Name">
+                </div>
+            </div>
+            <div class="settings-section">
+                <h2>Username</h2>
+                <p class="help-text">This is your unique identifier on Vibifiy.</p>
+                <div class="form-group full-width">
+                    <input type="text" id="editUsername" value="${profile.username || ''}" placeholder="username">
+                </div>
+            </div>
+            <div class="settings-section">
+                <h2>Bio</h2>
+                <p class="help-text">Tell us a little bit about yourself. You can use Markdown formatting.</p>
+                <div class="form-group full-width">
+                    <textarea id="editBio" rows="4" placeholder="Hi, I make awesome apps!">${profile.bio || ''}</textarea>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h2>Social Links</h2>
+                <div id="socialLinksContainer">
+                    <div class="form-group full-width"><label>Website</label><input type="url" id="editWebsite" value="${profile.website || ''}" placeholder="https://yourwebsite.com"></div>
+                    <div class="form-group full-width"><label>GitHub</label><input type="url" id="editGithub" value="${profile.github_url || ''}" placeholder="https://github.com/username"></div>
+                    <div class="form-group full-width"><label>Twitter</label><input type="url" id="editTwitter" value="${profile.twitter_url || ''}" placeholder="https://twitter.com/username"></div>
+                    <div class="form-group full-width"><label>LinkedIn</label><input type="url" id="editLinkedin" value="${profile.linkedin_url || ''}" placeholder="https://linkedin.com/in/username"></div>
+                </div>
+                <button type="button" class="btn-outline" onclick="addCustomSocialLink()" style="margin-top: 1rem;">+ Add Custom Social Link</button>
+            </div>
+            <div class="settings-section">
+                <h2>README</h2>
+                <p class="help-text">Add a README to your profile. You can use Markdown formatting.</p>
+                <div class="form-group full-width">
+                    <textarea id="editReadme" rows="8" placeholder="# Hi there!">${profile.readme || ''}</textarea>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-primary" onclick="saveProfile()">Save Changes</button>
+                <button type="button" class="btn-outline" onclick="navigateTo('profile')">Cancel</button>
+            </div>
+        `;
+        
+        // Re-attach file preview listeners
+        document.getElementById('editAvatarFile')?.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    document.getElementById('editProfileAvatar').innerHTML = `<img src="${event.target.result}" alt="Preview">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        document.getElementById('editBannerFile')?.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    document.getElementById('editBannerPreview').innerHTML = `<img src="${event.target.result}" alt="Banner Preview">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    } else if (section === 'general') {
+        content.innerHTML = `
+            <h1 class="github-page-title">General Settings</h1>
+            <div class="settings-section">
+                <h2>Appearance</h2>
+                <p class="help-text">Customize how Vibifiy looks to you.</p>
+                <div class="form-group">
+                    <label>Theme</label>
+                    <select id="themeSelect" style="width: 100%; padding: 0.6rem; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);">
+                        <option value="dark">Dark (Pitch Black)</option>
+                        <option value="light">Light</option>
+                    </select>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h2>Notifications</h2>
+                <p class="help-text">Choose what notifications you receive.</p>
+                <p style="color: var(--text-secondary);">Coming soon...</p>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-primary" onclick="saveGeneralSettings()">Save Changes</button>
+            </div>
+        `;
+        document.getElementById('themeSelect').value = document.body.getAttribute('data-theme') || 'dark';
+    } else if (section === 'posts') {
+        content.innerHTML = `<h1 class="github-page-title">Your Posts</h1><div id="userPostsList" class="activity-list"><p class="empty-activity">Loading...</p></div>`;
+        await loadUserPosts();
+    } else if (section === 'reposts') {
+        content.innerHTML = `<h1 class="github-page-title">Your Reposts</h1><div id="userRepostsList" class="activity-list"><p class="empty-activity">Loading...</p></div>`;
+        await loadUserReposts();
+    } else if (section === 'comments') {
+        content.innerHTML = `<h1 class="github-page-title">Your Comments & Replies</h1><div id="userCommentsList" class="activity-list"><p class="empty-activity">Loading...</p></div>`;
+        await loadUserComments();
+    }
+}
+
+async function loadUserPosts() {
+    const profile = await getOrCreateProfile();
+    const { data, error } = await supabase.from('discussions').select('*').eq('user_id', profile.user_id).order('created_at', { ascending: false });
+    const container = document.getElementById('userPostsList');
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p class="empty-activity">You haven\'t posted anything yet.</p>';
+        return;
+    }
+    container.innerHTML = data.map(post => `
+        <div class="activity-card">
+            <div class="activity-card-header">
+                <strong>${escapeHtml(post.title)}</strong>
+                <span class="activity-card-date">${new Date(post.created_at).toLocaleDateString()}</span>
+            </div>
+            <div class="activity-card-content">${escapeHtml(post.content.substring(0, 200))}${post.content.length > 200 ? '...' : ''}</div>
+        </div>
+    `).join('');
+}
+
+async function loadUserReposts() {
+    const container = document.getElementById('userRepostsList');
+    container.innerHTML = '<p class="empty-activity">Reposts feature coming soon!</p>';
+}
+
+async function loadUserComments() {
+    const container = document.getElementById('userCommentsList');
+    container.innerHTML = '<p class="empty-activity">Comments feature coming soon!</p>';
+}
+
+async function saveGeneralSettings() {
+    const theme = document.getElementById('themeSelect').value;
+    document.body.setAttribute('data-theme', theme);
+    localStorage.setItem('vibifiy-theme', theme);
+    document.getElementById('themeToggle').textContent = theme === 'dark' ? '☀️' : '🌙';
+    alert('Settings saved!');
 }
 
 // Handle browser back/forward
@@ -176,14 +347,12 @@ function handleRoute(hash) {
     const parts = hash.split('/').filter(p => p);
     
     if (parts[0] === 'profile' && parts[1]) {
-        // User profile: #/profile/username
         navigateTo('user-profile', { username: parts[1] });
-    } else if (parts[0] && parts[1] === 'post' && parts[2]) {
-        // Post view: #/username/post/postid
-        loadPost(parts[0], parts[2]);
-    } else if (parts[0] && parts[1] === 'activity') {
-        // Activity: #/username/activity/type/id
-        loadActivity(parts[0], parts[2], parts[3]);
+    } else if (parts[0] === 'settings' && parts[1]) {
+        navigateTo('settings');
+        setTimeout(() => loadSettingsSection(parts[1]), 100);
+    } else if (parts[0] === 'settings') {
+        navigateTo('settings');
     } else if (parts[0] === 'dashboard') {
         navigateTo('dashboard');
     } else if (parts[0] === 'download') {
@@ -196,12 +365,44 @@ function handleRoute(hash) {
         navigateTo('discussions');
     } else if (parts[0] === 'profile') {
         navigateTo('profile');
-    } else if (parts[0] === 'profile-edit') {
-        navigateTo('profile-edit');
     } else {
         navigateTo('dashboard');
     }
 }
+
+// Nav dropdown toggle
+document.getElementById('navAvatar')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('navDropdown').classList.toggle('show');
+});
+
+document.addEventListener('click', () => {
+    document.getElementById('navDropdown')?.classList.remove('show');
+});
+
+document.getElementById('dropdownProfile')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    navigateTo('profile');
+    document.getElementById('navDropdown').classList.remove('show');
+});
+
+document.getElementById('dropdownLogout')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (confirm('Clear your local session?')) {
+        localStorage.removeItem('vibifiy_user_id');
+        localStorage.removeItem('vibifiy-theme');
+        location.reload();
+    }
+});
+
+// Sidebar link clicks
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('sidebar-link')) {
+        e.preventDefault();
+        const section = e.target.dataset.section;
+        if (section) loadSettingsSection(section);
+    }
+});
 
 navLinks.forEach(link => {
     link.addEventListener('click', (e) => {
@@ -538,6 +739,16 @@ async function updateNavAvatar() {
         if (letter) letter.textContent = 'U';
     }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderDownloads();
+    renderDashboard();
+    setTimeout(() => {
+        updateNavAvatar();
+    }, 500);
+    const hash = window.location.hash.substring(1);
+    handleRoute(hash);
+});
 
 document.getElementById('navAvatar')?.addEventListener('click', () => {
     navigateTo('profile');

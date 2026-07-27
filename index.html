@@ -26,9 +26,17 @@
         <div class="controls">
             <input type="text" id="searchInput" placeholder="Search projects..." aria-label="Search projects">
             <button id="themeToggle" aria-label="Toggle dark mode"></button>
-            <div class="nav-avatar" id="navAvatar" title="My Profile">
-                <span id="navAvatarLetter">?</span>
-                <img id="navAvatarImg" src="" alt="" style="display: none;">
+            <div class="nav-avatar-wrapper">
+                <div class="nav-avatar" id="navAvatar" title="My Profile">
+                    <span id="navAvatarLetter">?</span>
+                    <img id="navAvatarImg" src="" alt="" style="display: none;">
+                </div>
+                <div class="nav-dropdown" id="navDropdown">
+                    <a href="#/profile" class="dropdown-item" id="dropdownProfile"> Profile</a>
+                    <a href="#/settings" class="dropdown-item">⚙️ Settings</a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" class="dropdown-item" id="dropdownLogout">🚪 Logout</a>
+                </div>
             </div>
         </div>
     </nav>
@@ -211,7 +219,40 @@
             </div>
         </section>
 
-                <!-- PROFILE EDIT SECTION (GitHub Style) -->
+                <!-- SETTINGS PAGE -->
+        <section id="page-settings" class="page">
+            <div class="github-settings-layout">
+                <nav class="github-sidebar">
+                    <div class="sidebar-section">
+                        <h3>Account</h3>
+                        <ul>
+                            <li><a href="#/settings/account" class="sidebar-link" data-section="account">Public profile</a></li>
+                        </ul>
+                    </div>
+                    <div class="sidebar-section">
+                        <h3>General</h3>
+                        <ul>
+                            <li><a href="#/settings/general" class="sidebar-link" data-section="general">Appearance</a></li>
+                            <li><a href="#/settings/general" class="sidebar-link" data-section="general">Notifications</a></li>
+                        </ul>
+                    </div>
+                    <div class="sidebar-section">
+                        <h3>Activity</h3>
+                        <ul>
+                            <li><a href="#/settings/activity/posts" class="sidebar-link" data-section="posts">Posts</a></li>
+                            <li><a href="#/settings/activity/reposts" class="sidebar-link" data-section="reposts">Reposts</a></li>
+                            <li><a href="#/settings/activity/comments" class="sidebar-link" data-section="comments">Comments & Replies</a></li>
+                        </ul>
+                    </div>
+                </nav>
+                
+                <div class="github-settings-content" id="settingsContent">
+                    <!-- Dynamic content loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- PROFILE EDIT SECTION (GitHub Style) -->
         <section id="page-profile-edit" class="page">
             <div class="github-settings-layout">
                 <nav class="github-sidebar">
