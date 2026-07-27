@@ -153,7 +153,8 @@ function navigateTo(pageId, params = {}) {
         'discussions': 'page-discussions',
         'profile': 'page-profile',
         'profile-edit': 'page-profile-edit',
-        'settings': 'page-settings'
+        'settings': 'page-settings',
+        'post-view': 'page-post-view'
     };
     
     const targetId = idMap[pageId] || 'page-dashboard';
@@ -174,6 +175,7 @@ function navigateTo(pageId, params = {}) {
     if (pageId === 'profile') loadProfile();
     if (pageId === 'profile-edit') loadProfileEdit();
     if (pageId === 'settings') loadSettingsSection('account');
+    if (pageId === 'post-view') loadPostView(params.postId);
     
     window.scrollTo(0, 0);
 }
@@ -571,7 +573,9 @@ function handleRoute(hash) {
     
     const parts = hash.split('/').filter(p => p);
     
-    if (parts[0] === 'profile' && parts[1]) {
+    if (parts[0] === 'post' && parts[1]) {
+        navigateTo('post-view', { postId: parts[1] });
+    } else if (parts[0] === 'profile' && parts[1]) {
         navigateTo('user-profile', { username: parts[1] });
     } else if (parts[0] === 'settings' && parts[1]) {
         navigateTo('settings');
@@ -862,7 +866,7 @@ function renderDiscussionPost(discussion) {
         ${imagesHtml}${githubCardHtml}
         <div class="discussion-footer">
             <button class="discussion-action-btn" onclick="repostDiscussion('${discussion.id}')">🔁 Repost</button>
-            <button class="discussion-action-btn" onclick="toggleComments('${discussion.id}')">💬 Comments</button>
+            <button class="discussion-action-btn" onclick="navigateTo('post-view', { postId: '${discussion.id}' })"> Comments</button>
         </div>
         <div id="comments-${discussion.id}" class="comments-section" style="display: none;">
             <div class="comment-form">
@@ -1740,6 +1744,240 @@ async function saveProfile() {
         }
     });
 }
+
+
+// Load single post view
+async function loadPostView(postId) {
+    const contentEl = document.getElementById('postViewContent');
+    const commentsListEl = document.getElementById('viewCommentsList');
+    
+    if (!contentEl || !commentsListEl) return;
+    
+    contentEl.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Loading post...</p>';
+    commentsListEl.innerHTML = '';
+    
+    // Fetch post
+    const { data: post, error: postError } = await supabase
+        .from('discussions')
+        .select('*')
+        .eq('id', postId)
+        .single();
+    
+    if (postError || !post) {
+        contentEl.innerHTML = '<p style="text-align: center; color: var(--error);">Post not found.</p>';
+        return;
+    }
+    
+    // Render post
+    const date = new Date(post.created_at).toLocaleDateString();
+    const initial = (post.user_name || 'U').charAt(0).toUpperCase();
+    
+    let imagesHtml = '';
+    if (post.images && post.images.length > 0) {
+        imagesHtml = `<div class="post-view-images">${post.images.map(img => `<img src="${img.url}" alt="${img.name || 'Image'}">`).join('')}</div>`;
+    }
+    
+    let githubCardHtml = '';
+    if (post.github_link) {
+        githubCardHtml = `<div class="github-link-card" style="margin-top: 1rem;">Loading GitHub preview...</div>`;
+        // Fetch GitHub data async
+        fetchGitHubRepoData(post.github_link).then(repoData => {
+            if (repoData) {
+                const card = contentEl.querySelector('.github-link-card');
+                if (card) card.innerHTML = renderGitHubCard(repoData);
+            }
+        });
+    }
+    
+    contentEl.innerHTML = `
+        <div class="post-view-header">
+            <div class="post-view-avatar">${initial}</div>
+            <div class="post-view-author-info">
+                <h4>${escapeHtml(post.user_name)}</h4>
+                <span>${date}</span>
+            </div>
+        </div>
+        <h1 class="post-view-title">${escapeHtml(post.title)}</h1>
+        <div class="post-view-body">${renderMarkdown(post.content)}</div>
+        ${imagesHtml}
+        ${githubCardHtml}
+        <div class="post-view-meta">
+            <span>⭐ 0 likes</span>
+            <span>💬 <span id="commentCountBadge">0</span> comments</span>
+        </div>
+    `;
+    
+    // Load comments
+    await loadViewComments(postId);
+    
+    // Scroll to top
+    window.scrollTo(0, 0);
+}
+
+// Load comments for post view
+async function loadViewComments(postId) {
+    const { data: comments, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('discussion_id', postId)
+        .order('created_at', { ascending: true });
+    
+    const container = document.getElementById('viewCommentsList');
+    const badge = document.getElementById('commentCountBadge');
+    
+    if (badge) badge.textContent = comments?.length || 0;
+    
+    if (!container) return;
+    
+    if (!comments || comments.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">No comments yet. Be the first to comment!</p>';
+        return;
+    }
+    
+    // Build threaded structure
+    const commentMap = new Map();
+    const rootComments = [];
+    
+    comments.forEach(c => {
+        commentMap.set(c.id, { ...c, replies: [] });
+    });
+    
+    comments.forEach(c => {
+        if (c.parent_comment_id && commentMap.has(c.parent_comment_id)) {
+            commentMap.get(c.parent_comment_id).replies.push(commentMap.get(c.id));
+        } else {
+            rootComments.push(commentMap.get(c.id));
+        }
+    });
+    
+    container.innerHTML = rootComments.map(c => renderCommentThread(c)).join('');
+}
+
+// Render a comment thread recursively
+function renderCommentThread(comment, depth = 0) {
+    const date = new Date(comment.created_at).toLocaleDateString();
+    const initial = (comment.user_name || 'U').charAt(0).toUpperCase();
+    const currentUserId = getUserId();
+    const isOwner = comment.user_id === currentUserId;
+    
+    const repliesHtml = comment.replies && comment.replies.length > 0
+        ? comment.replies.map(r => renderCommentThread(r, depth + 1)).join('')
+        : '';
+    
+    return `
+        <div class="comment-thread">
+            <div class="comment-item" data-comment-id="${comment.id}">
+                <div class="comment-item-header">
+                    <div class="comment-item-author">
+                        <div class="comment-item-avatar">${initial}</div>
+                        <div>
+                            <h5>${escapeHtml(comment.user_name)}</h5>
+                            <span class="comment-item-date">${date}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="comment-item-content">${escapeHtml(comment.content)}</div>
+                <div class="comment-item-actions">
+                    <button class="reply-btn" onclick="showReplyForm('${comment.id}', '${comment.discussion_id}')">↩ Reply</button>
+                    ${isOwner ? `<button class="delete-comment-btn" onclick="deleteCommentFromView('${comment.id}', '${comment.discussion_id}')">Delete</button>` : ''}
+                </div>
+                <div id="reply-form-${comment.id}"></div>
+            </div>
+            ${repliesHtml}
+        </div>
+    `;
+}
+
+// Show reply form
+window.showReplyForm = (commentId, discussionId) => {
+    // Close any open reply forms
+    document.querySelectorAll('.reply-form').forEach(f => f.remove());
+    
+    const container = document.getElementById(`reply-form-${commentId}`);
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="reply-form">
+            <input type="text" id="reply-name-${commentId}" placeholder="Your name">
+            <textarea id="reply-text-${commentId}" placeholder="Write a reply..." rows="2"></textarea>
+            <div class="reply-form-actions">
+                <button class="btn-outline" onclick="cancelReply('${commentId}')">Cancel</button>
+                <button class="btn-primary" onclick="submitReply('${commentId}', '${discussionId}')">Reply</button>
+            </div>
+        </div>
+    `;
+};
+
+window.cancelReply = (commentId) => {
+    const container = document.getElementById(`reply-form-${commentId}`);
+    if (container) container.innerHTML = '';
+};
+
+// Submit reply
+window.submitReply = async (parentCommentId, discussionId) => {
+    const name = document.getElementById(`reply-name-${parentCommentId}`)?.value.trim();
+    const content = document.getElementById(`reply-text-${parentCommentId}`)?.value.trim();
+    
+    if (!name || !content) {
+        showCustomDialog('Missing Info', 'Please enter your name and a reply.');
+        return;
+    }
+    
+    const userId = getUserId();
+    const { error } = await supabase.from('comments').insert([{
+        discussion_id: discussionId,
+        parent_comment_id: parentCommentId,
+        user_name: name,
+        user_id: userId,
+        content: content
+    }]);
+    
+    if (error) {
+        showCustomDialog('Error', 'Failed to post reply: ' + error.message);
+    } else {
+        await loadViewComments(discussionId);
+    }
+};
+
+// Delete comment from view
+window.deleteCommentFromView = async (commentId, discussionId) => {
+    showCustomDialog('Delete Comment', 'Delete this comment and its replies?', async () => {
+        const { error } = await supabase.from('comments').delete().eq('id', commentId);
+        if (error) {
+            showCustomDialog('Error', 'Failed to delete: ' + error.message);
+        } else {
+            await loadViewComments(discussionId);
+        }
+    });
+};
+
+// Submit comment on post view page
+document.getElementById('submitViewCommentBtn')?.addEventListener('click', async () => {
+    const postId = window.location.hash.split('/').pop();
+    const name = document.getElementById('viewCommentName')?.value.trim();
+    const content = document.getElementById('viewCommentText')?.value.trim();
+    
+    if (!name || !content) {
+        showCustomDialog('Missing Info', 'Please enter your name and a comment.');
+        return;
+    }
+    
+    const userId = getUserId();
+    const { error } = await supabase.from('comments').insert([{
+        discussion_id: postId,
+        user_name: name,
+        user_id: userId,
+        content: content
+    }]);
+    
+    if (error) {
+        showCustomDialog('Error', 'Failed to post comment: ' + error.message);
+    } else {
+        document.getElementById('viewCommentText').value = '';
+        await loadViewComments(postId);
+    }
+});
+
 
 // Expose to window for inline onclick handlers (ES modules don't expose by default)
 window.saveProfile = saveProfile;

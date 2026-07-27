@@ -242,6 +242,29 @@
             </div>
         </section>
 
+        <!-- SINGLE POST VIEW PAGE -->
+        <section id="page-post-view" class="page">
+            <div class="post-view-container">
+                <button class="btn-outline back-btn" onclick="navigateTo('discussions')">← Back to Discussions</button>
+                
+                <div id="postViewContent" class="post-view-content">
+                    <!-- Post content loaded dynamically -->
+                </div>
+                
+                <div class="comments-section-full">
+                    <h3 class="comments-section-title">💬 Comments</h3>
+                    
+                    <div class="comment-form-full">
+                        <input type="text" id="viewCommentName" placeholder="Your name">
+                        <textarea id="viewCommentText" placeholder="Write a comment..." rows="3"></textarea>
+                        <button class="btn-primary" id="submitViewCommentBtn" style="width: auto;">Post Comment</button>
+                    </div>
+                    
+                    <div id="viewCommentsList" class="comments-threaded"></div>
+                </div>
+            </div>
+        </section>
+
         <!-- SETTINGS PAGE -->
         <section id="page-settings" class="page">
             <div class="github-settings-layout">
