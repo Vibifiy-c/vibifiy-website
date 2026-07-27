@@ -1695,3 +1695,50 @@ a:hover {
         max-width: 100%;
     }
 }
+
+/* Username Validation Styles */
+.username-feedback {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+
+.username-feedback.valid {
+    color: #4caf50;
+}
+
+.username-feedback.invalid {
+    color: #e53935;
+}
+
+.username-feedback.checking {
+    color: var(--text-secondary);
+}
+
+#editUsername.valid {
+    border-color: #4caf50 !important;
+    color: #a020f0 !important;
+}
+
+#editUsername.invalid {
+    border-color: #e53935 !important;
+    color: #e53935 !important;
+}
+
+.username-spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

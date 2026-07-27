@@ -255,8 +255,9 @@ async function loadSettingsSection(section) {
                 <div class="account-info-grid">
                     <div class="form-group full-width">
                         <h2>Username</h2>
-                        <p class="help-text">Your unique identifier on Vibifiy.</p>
-                        <input type="text" id="editUsername" value="${profile.username || ''}" placeholder="username">
+                        <p class="help-text">Your unique identifier on Vibifiy. 3-39 characters, lowercase letters, numbers, and hyphens only.</p>
+                        <input type="text" id="editUsername" value="${profile.username || ''}" placeholder="username" autocomplete="off">
+                        <div id="usernameFeedback" class="username-feedback"></div>
                     </div>
                     <div class="form-group full-width">
                         <h2>Name</h2>
@@ -300,6 +301,18 @@ async function loadSettingsSection(section) {
                 <button type="button" class="btn-outline" onclick="navigateTo('profile')">Cancel</button>
             </div>
         `;
+        
+        // Username validation listener
+        const usernameInput = document.getElementById('editUsername');
+        if (usernameInput) {
+            usernameInput.addEventListener('input', (e) => {
+                checkUsernameAvailability(e.target.value);
+            });
+            // Trigger initial check
+            if (usernameInput.value) {
+                checkUsernameAvailability(usernameInput.value);
+            }
+        }
         
         // Re-attach file preview listeners
         document.getElementById('editAvatarFile')?.addEventListener('change', (e) => {
@@ -1094,8 +1107,114 @@ document.getElementById('editBannerFile')?.addEventListener('change', (e) => {
     img.src = URL.createObjectURL(file);
 });
 
+// Username validation state
+window._usernameValid = false;
+window._usernameCheckTimeout = null;
+
+// Real-time username validation
+async function checkUsernameAvailability(username) {
+    const feedbackEl = document.getElementById('usernameFeedback');
+    const inputEl = document.getElementById('editUsername');
+    
+    if (!feedbackEl || !inputEl) return;
+    
+    // Clear previous timeout
+    if (window._usernameCheckTimeout) {
+        clearTimeout(window._usernameCheckTimeout);
+    }
+    
+    // Validate format first
+    const cleanUsername = username.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    
+    if (!username.trim()) {
+        feedbackEl.className = 'username-feedback invalid';
+        feedbackEl.innerHTML = '❌ Username cannot be empty';
+        inputEl.className = 'invalid';
+        window._usernameValid = false;
+        return;
+    }
+    
+    if (username !== cleanUsername) {
+        feedbackEl.className = 'username-feedback invalid';
+        feedbackEl.innerHTML = '❌ Invalid username. Cannot contain spaces or special characters';
+        inputEl.className = 'invalid';
+        window._usernameValid = false;
+        return;
+    }
+    
+    if (username.length < 3) {
+        feedbackEl.className = 'username-feedback invalid';
+        feedbackEl.innerHTML = ' Username must be at least 3 characters';
+        inputEl.className = 'invalid';
+        window._usernameValid = false;
+        return;
+    }
+    
+    if (username.length > 39) {
+        feedbackEl.className = 'username-feedback invalid';
+        feedbackEl.innerHTML = '❌ Username must be 39 characters or less';
+        inputEl.className = 'invalid';
+        window._usernameValid = false;
+        return;
+    }
+    
+    // Show checking state
+    feedbackEl.className = 'username-feedback checking';
+    feedbackEl.innerHTML = '<span class="username-spinner"></span> Checking availability...';
+    inputEl.className = '';
+    
+    // Debounce the API call
+    window._usernameCheckTimeout = setTimeout(async () => {
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('user_id')
+                .eq('username', username)
+                .single();
+            
+            if (error && error.code === 'PGRST116') {
+                // No row found - username is available!
+                feedbackEl.className = 'username-feedback valid';
+                feedbackEl.innerHTML = '✓ This username is available';
+                inputEl.className = 'valid';
+                window._usernameValid = true;
+            } else if (data) {
+                // Username exists - check if it's the current user
+                const currentUserId = getUserId();
+                if (data.user_id === currentUserId) {
+                    feedbackEl.className = 'username-feedback valid';
+                    feedbackEl.innerHTML = '✓ This username is available';
+                    inputEl.className = 'valid';
+                    window._usernameValid = true;
+                } else {
+                    feedbackEl.className = 'username-feedback invalid';
+                    feedbackEl.innerHTML = '❌ This username is already taken';
+                    inputEl.className = 'invalid';
+                    window._usernameValid = false;
+                }
+            } else {
+                feedbackEl.className = 'username-feedback invalid';
+                feedbackEl.innerHTML = '❌ Error checking username';
+                inputEl.className = 'invalid';
+                window._usernameValid = false;
+            }
+        } catch (err) {
+            feedbackEl.className = 'username-feedback invalid';
+            feedbackEl.innerHTML = '❌ Error checking username';
+            inputEl.className = 'invalid';
+            window._usernameValid = false;
+        }
+    }, 500);
+}
+
 // Save profile function
 async function saveProfile() {
+    // Validate username before saving
+    if (!window._usernameValid) {
+        showCustomDialog('Invalid Username', 'Please choose a valid and available username before saving.');
+        return;
+    }
+    
     // Show confirmation dialog first
     showCustomDialog('Confirm Save', 'Are you sure you want to save the changes to your account?', async () => {
         const userId = getUserId();
