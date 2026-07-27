@@ -411,32 +411,148 @@ async function loadSettingsSection(section) {
 
 async function loadUserPosts() {
     const profile = await getOrCreateProfile();
-    const { data, error } = await supabase.from('discussions').select('*').eq('user_id', profile.user_id).order('created_at', { ascending: false });
+    const { data, error } = await supabase
+        .from('discussions')
+        .select('*')
+        .eq('user_id', profile.user_id)
+        .is('repost_of', null)
+        .order('created_at', { ascending: false });
+    
     const container = document.getElementById('userPostsList');
+    if (!container) return;
+    
     if (!data || data.length === 0) {
-        container.innerHTML = '<p class="empty-activity">You haven\'t posted anything yet.</p>';
+        container.innerHTML = '<p class="empty-activity">You haven\'t posted anything yet. Head to Discussions to create your first post!</p>';
         return;
     }
-    container.innerHTML = data.map(post => `
-        <div class="activity-card">
-            <div class="activity-card-header">
-                <strong>${escapeHtml(post.title)}</strong>
-                <span class="activity-card-date">${new Date(post.created_at).toLocaleDateString()}</span>
+    
+    container.innerHTML = data.map(post => {
+        const date = new Date(post.created_at).toLocaleDateString();
+        return `
+            <div class="activity-card">
+                <div class="activity-card-header">
+                    <div>
+                        <strong class="activity-title">${escapeHtml(post.title)}</strong>
+                        <span class="activity-card-date">${date}</span>
+                    </div>
+                    <div class="activity-card-actions">
+                        <button class="btn-icon-small" onclick="editPost('${post.id}')" title="Edit">✏️</button>
+                        <button class="btn-icon-small btn-icon-danger" onclick="deletePost('${post.id}')" title="Delete">🗑️</button>
+                    </div>
+                </div>
+                <div class="activity-card-content">${escapeHtml(post.content.substring(0, 300))}${post.content.length > 300 ? '...' : ''}</div>
+                ${post.github_link ? `<div class="activity-card-link">🔗 ${escapeHtml(post.github_link)}</div>` : ''}
             </div>
-            <div class="activity-card-content">${escapeHtml(post.content.substring(0, 200))}${post.content.length > 200 ? '...' : ''}</div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 async function loadUserReposts() {
+    const profile = await getOrCreateProfile();
+    const { data, error } = await supabase
+        .from('discussions')
+        .select('*, original:repost_of(*)')
+        .eq('user_id', profile.user_id)
+        .not('repost_of', 'is', null)
+        .order('created_at', { ascending: false });
+    
     const container = document.getElementById('userRepostsList');
-    container.innerHTML = '<p class="empty-activity">Reposts feature coming soon!</p>';
+    if (!container) return;
+    
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p class="empty-activity">You haven\'t reposted anything yet.</p>';
+        return;
+    }
+    
+    container.innerHTML = data.map(repost => {
+        const date = new Date(repost.created_at).toLocaleDateString();
+        const original = repost.original || {};
+        return `
+            <div class="activity-card repost-card">
+                <div class="repost-badge">🔁 Reposted on ${date}</div>
+                <div class="activity-card-header">
+                    <strong class="activity-title">${escapeHtml(original.title || 'Deleted Post')}</strong>
+                </div>
+                <div class="activity-card-content">${escapeHtml((original.content || '').substring(0, 200))}</div>
+                <div class="repost-author">Originally by ${escapeHtml(original.user_name || 'Unknown')}</div>
+            </div>
+        `;
+    }).join('');
 }
 
 async function loadUserComments() {
+    const profile = await getOrCreateProfile();
+    const { data, error } = await supabase
+        .from('comments')
+        .select('*, discussion:discussion_id(title, user_name)')
+        .eq('user_id', profile.user_id)
+        .order('created_at', { ascending: false });
+    
     const container = document.getElementById('userCommentsList');
-    container.innerHTML = '<p class="empty-activity">Comments feature coming soon!</p>';
+    if (!container) return;
+    
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p class="empty-activity">You haven\'t commented on anything yet.</p>';
+        return;
+    }
+    
+    container.innerHTML = data.map(comment => {
+        const date = new Date(comment.created_at).toLocaleDateString();
+        const discussion = comment.discussion || {};
+        return `
+            <div class="activity-card comment-card">
+                <div class="activity-card-header">
+                    <div>
+                        <span class="comment-on-label">Commented on</span>
+                        <strong class="activity-title">${escapeHtml(discussion.title || 'Deleted Discussion')}</strong>
+                        <span class="activity-card-date">${date}</span>
+                    </div>
+                    <div class="activity-card-actions">
+                        <button class="btn-icon-small" onclick="editComment('${comment.id}')" title="Edit">✏️</button>
+                        <button class="btn-icon-small btn-icon-danger" onclick="deleteComment('${comment.id}')" title="Delete">️</button>
+                    </div>
+                </div>
+                <div class="activity-card-content comment-text">${escapeHtml(comment.content)}</div>
+            </div>
+        `;
+    }).join('');
 }
+
+// Post actions
+window.editPost = (id) => {
+    showCustomDialog('Edit Post', 'Editing posts is coming soon! For now, delete and recreate.', () => {});
+};
+
+window.deletePost = async (id) => {
+    showCustomDialog('Delete Post', 'Are you sure you want to delete this post? This cannot be undone.', async () => {
+        const { error } = await supabase.from('discussions').delete().eq('id', id);
+        if (error) {
+            showCustomDialog('Error', 'Failed to delete post: ' + error.message);
+        } else {
+            showCustomDialog('Success', 'Post deleted!', () => {
+                loadUserPosts();
+            });
+        }
+    });
+};
+
+// Comment actions
+window.editComment = (id) => {
+    showCustomDialog('Edit Comment', 'Editing comments is coming soon!', () => {});
+};
+
+window.deleteComment = async (id) => {
+    showCustomDialog('Delete Comment', 'Are you sure you want to delete this comment?', async () => {
+        const { error } = await supabase.from('comments').delete().eq('id', id);
+        if (error) {
+            showCustomDialog('Error', 'Failed to delete comment: ' + error.message);
+        } else {
+            showCustomDialog('Success', 'Comment deleted!', () => {
+                loadUserComments();
+            });
+        }
+    });
+};
 
 async function saveGeneralSettings() {
     const theme = document.getElementById('themeSelect').value;
@@ -821,12 +937,129 @@ window.deleteDiscussion = async (id) => {
         console.error(err);
     }
 };
-window.repostDiscussion = (id) => alert('Repost feature coming soon!');
-window.toggleComments = (id) => {
-    const el = document.getElementById(`comments-${id}`);
-    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+window.repostDiscussion = async (id) => {
+    showCustomDialog('Repost Discussion', 'Repost this discussion to your profile?', async () => {
+        const userId = getUserId();
+        const profile = await getOrCreateProfile();
+        
+        // Get original post
+        const { data: original } = await supabase.from('discussions').select('*').eq('id', id).single();
+        if (!original) {
+            showCustomDialog('Error', 'Original post not found');
+            return;
+        }
+        
+        // Create repost
+        const { error } = await supabase.from('discussions').insert([{
+            user_name: profile.display_name || 'Anonymous',
+            user_id: userId,
+            title: original.title,
+            content: original.content,
+            github_link: original.github_link,
+            images: original.images,
+            repost_of: id
+        }]);
+        
+        if (error) {
+            showCustomDialog('Error', 'Failed to repost: ' + error.message);
+        } else {
+            showCustomDialog('Success', 'Reposted to your profile!', () => {
+                initDiscussions();
+            });
+        }
+    });
 };
-window.submitComment = (id) => alert('Comments feature coming soon!');
+
+window.toggleComments = async (id) => {
+    const el = document.getElementById(`comments-${id}`);
+    if (!el) return;
+    
+    if (el.style.display === 'none' || !el.style.display) {
+        el.style.display = 'block';
+        await loadCommentsForDiscussion(id);
+    } else {
+        el.style.display = 'none';
+    }
+};
+
+async function loadCommentsForDiscussion(discussionId) {
+    const { data: comments, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('discussion_id', discussionId)
+        .order('created_at', { ascending: true });
+    
+    const listEl = document.getElementById(`comments-list-${discussionId}`);
+    if (!listEl) return;
+    
+    if (error || !comments || comments.length === 0) {
+        listEl.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">No comments yet. Be the first!</p>';
+        return;
+    }
+    
+    const currentUserId = getUserId();
+    listEl.innerHTML = comments.map(c => {
+        const date = new Date(c.created_at).toLocaleDateString();
+        const isOwner = c.user_id === currentUserId;
+        const isReply = c.parent_comment_id !== null;
+        return `
+            <div class="comment-card ${isReply ? 'comment-reply' : ''}">
+                <div class="comment-author">
+                    <div class="comment-avatar">${c.user_name.charAt(0).toUpperCase()}</div>
+                    <div>
+                        <h5>${escapeHtml(c.user_name)}</h5>
+                        <span class="comment-date">${date}</span>
+                    </div>
+                </div>
+                <div class="comment-content">${escapeHtml(c.content)}</div>
+                ${isOwner ? `
+                    <div class="comment-actions">
+                        <button class="btn-icon-small btn-icon-danger" onclick="deleteCommentFromDiscussion('${c.id}', '${discussionId}')">Delete</button>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+window.deleteCommentFromDiscussion = async (commentId, discussionId) => {
+    showCustomDialog('Delete Comment', 'Delete this comment?', async () => {
+        const { error } = await supabase.from('comments').delete().eq('id', commentId);
+        if (error) {
+            showCustomDialog('Error', 'Failed to delete: ' + error.message);
+        } else {
+            await loadCommentsForDiscussion(discussionId);
+        }
+    });
+};
+
+window.submitComment = async (discussionId) => {
+    const nameInput = document.getElementById(`comment-name-${discussionId}`);
+    const textInput = document.getElementById(`comment-text-${discussionId}`);
+    
+    const name = nameInput?.value.trim();
+    const content = textInput?.value.trim();
+    
+    if (!name || !content) {
+        showCustomDialog('Missing Info', 'Please enter your name and a comment.');
+        return;
+    }
+    
+    const userId = getUserId();
+    const { error } = await supabase.from('comments').insert([{
+        discussion_id: discussionId,
+        user_name: name,
+        user_id: userId,
+        content: content
+    }]);
+    
+    if (error) {
+        showCustomDialog('Error', 'Failed to post comment: ' + error.message);
+    } else {
+        textInput.value = '';
+        await loadCommentsForDiscussion(discussionId);
+    }
+};
 
 // ============================================
 // 8. UTILS & INIT
@@ -968,9 +1201,36 @@ async function loadProfile() {
     const { count } = await supabase
         .from('discussions')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', profile.user_id);
+        .eq('user_id', profile.user_id)
+        .is('repost_of', null);
     
     document.getElementById('statPosts').textContent = count || 0;
+    
+    // Load user's actual posts
+    const { data: posts } = await supabase
+        .from('discussions')
+        .select('*')
+        .eq('user_id', profile.user_id)
+        .is('repost_of', null)
+        .order('created_at', { ascending: false })
+        .limit(5);
+    
+    const postsContainer = document.getElementById('profilePosts');
+    if (postsContainer) {
+        if (!posts || posts.length === 0) {
+            postsContainer.innerHTML = '<p class="empty-activity">No posts yet.</p>';
+        } else {
+            postsContainer.innerHTML = posts.map(post => `
+                <div class="activity-card">
+                    <div class="activity-card-header">
+                        <strong class="activity-title">${escapeHtml(post.title)}</strong>
+                        <span class="activity-card-date">${new Date(post.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <div class="activity-card-content">${escapeHtml(post.content.substring(0, 200))}${post.content.length > 200 ? '...' : ''}</div>
+                </div>
+            `).join('');
+        }
+    }
     
     return profile;
 }
