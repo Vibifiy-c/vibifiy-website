@@ -283,23 +283,25 @@ async function loadSettingsSection(section) {
             }
         });
         
-        // Delete avatar button
-        document.getElementById('deleteAvatarBtn')?.addEventListener('click', () => {
+        // Delete avatar button (Auto-save)
+        document.getElementById('deleteAvatarBtn')?.addEventListener('click', async () => {
             if (confirm('Delete your profile photo?')) {
                 document.getElementById('editProfileAvatar').innerHTML = (profile.display_name || 'A').charAt(0).toUpperCase();
                 document.getElementById('editAvatarFile').value = '';
-                // Mark for deletion
                 window._deleteAvatar = true;
+                await saveProfile(); // Auto-save immediately
+                loadSettingsSection('account'); // Refresh UI
             }
         });
         
-        // Delete banner button
-        document.getElementById('deleteBannerBtn')?.addEventListener('click', () => {
+        // Delete banner button (Auto-save)
+        document.getElementById('deleteBannerBtn')?.addEventListener('click', async () => {
             if (confirm('Delete your banner image?')) {
                 document.getElementById('editBannerPreview').innerHTML = '<span style="color: var(--text-secondary);">No banner</span>';
                 document.getElementById('editBannerFile').value = '';
-                // Mark for deletion
                 window._deleteBanner = true;
+                await saveProfile(); // Auto-save immediately
+                loadSettingsSection('account'); // Refresh UI
             }
         });
     } else if (section === 'general') {
@@ -929,19 +931,9 @@ function renderMarkdown(text) {
         .replace(/\n/g, '<br>');
 }
 
-// Edit profile - GitHub style (navigate to edit page)
+// Edit profile - GitHub style (navigate to settings)
 document.getElementById('editProfileBtn')?.addEventListener('click', async () => {
-    const profile = await getOrCreateProfile();
-    
-    document.getElementById('editDisplayName').value = profile.display_name || '';
-    document.getElementById('editUsername').value = profile.username || '';
-    document.getElementById('editBio').value = profile.bio || '';
-    document.getElementById('editWebsite').value = profile.website || '';
-    document.getElementById('editGithub').value = profile.github_url || '';
-    document.getElementById('editTwitter').value = profile.twitter_url || '';
-    document.getElementById('editLinkedin').value = profile.linkedin_url || '';
-    
-    navigateTo('profile-edit');
+    navigateTo('settings');
 });
 
 // Upload profile image helper
