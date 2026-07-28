@@ -767,7 +767,7 @@ async function fetchGitHubRepoData(url) {
     } catch (error) { return null; }
 }
 
-async function uploadDiscussionImage(file) {
+async function uploadDiscussionImage(file, originalName = null) {
     // Check original file size
     if (file.size > 5 * 1024 * 1024) { // 5MB max before compression
         throw new Error('File is too large. Maximum size is 5MB before compression.');
@@ -777,13 +777,13 @@ async function uploadDiscussionImage(file) {
     const compressed = await compressImage(file, 256 * 1024); // Target 256KB
     
     // Show compression info
+    const name = originalName || file.name || 'image';
     const originalSize = (file.size / 1024 / 1024).toFixed(2);
     const compressedSize = (compressed.size / 1024 / 1024).toFixed(2);
-    console.log(`Compressed ${file.name}: ${originalSize}MB → ${compressedSize}MB (${Math.round((1 - compressed.size / file.size) * 100)}% reduction)`);
+    console.log(`Compressed ${name}: ${originalSize}MB → ${compressedSize}MB (${Math.round((1 - compressed.size / file.size) * 100)}% reduction)`);
     
     // Upload compressed version
     const userId = getUserId();
-    const fileExt = file.name.split('.').pop().toLowerCase();
     const fileName = `${userId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`; // Always use .jpg for compressed
     
     const { error } = await supabase.storage
@@ -1176,8 +1176,8 @@ document.getElementById('submitDiscussionBtn')?.addEventListener('click', async 
         const uploadedImages = [];
         for (const img of window._discussionImages) {
             if (img.type === 'file') {
-                const uploadResult = await uploadDiscussionImage(img.file);
-                uploadedImages.push({ name: img.originalName || 'image.jpg', url: uploadResult });
+                const uploadResult = await uploadDiscussionImage(img.file, img.originalName);
+                uploadedImages.push({ name: img.originalName || 'image', url: uploadResult });
             } else if (img.type === 'url') {
                 uploadedImages.push({ name: 'image', url: img.data });
             }
