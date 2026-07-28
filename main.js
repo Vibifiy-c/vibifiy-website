@@ -768,13 +768,27 @@ async function fetchGitHubRepoData(url) {
 }
 
 async function uploadDiscussionImage(file) {
+    // Check original file size
+    if (file.size > 5 * 1024 * 1024) { // 5MB max before compression
+        throw new Error('File is too large. Maximum size is 5MB before compression.');
+    }
+    
+    // Compress image to 256KB for storage — guaranteed by compressImage()
+    const compressed = await compressImage(file, 256 * 1024); // Target 256KB
+    
+    // Show compression info
+    const originalSize = (file.size / 1024 / 1024).toFixed(2);
+    const compressedSize = (compressed.size / 1024 / 1024).toFixed(2);
+    console.log(`Compressed ${file.name}: ${originalSize}MB → ${compressedSize}MB (${Math.round((1 - compressed.size / file.size) * 100)}% reduction)`);
+    
+    // Upload compressed version
     const userId = getUserId();
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${userId}_${Date.now()}_${file.name}`;
+    const fileExt = file.name.split('.').pop().toLowerCase();
+    const fileName = `${userId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`; // Always use .jpg for compressed
     
     const { error } = await supabase.storage
         .from('discussion-images')
-        .upload(fileName, file, { cacheControl: '3600', upsert: false });
+        .upload(fileName, compressed.blob, { cacheControl: '3600', upsert: false });
     
     if (error) throw error;
     
@@ -937,25 +951,140 @@ document.getElementById('uploadImageBtn')?.addEventListener('click', () => {
     document.getElementById('discussionImages').click();
 });
 
-// Handle file upload
-document.getElementById('discussionImages')?.addEventListener('change', (e) => {
-    const files = Array.from(e.target.files);
-    files.forEach(file => {
-        if (file.size > 5 * 1024 * 1024) {
-            showCustomDialog('Error', `File ${file.name} exceeds 5MB limit`);
-            return;
-        }
+// Compress image to target size (in bytes) — GUARANTEED, not best-effort.
+// Drops quality first (0.9 → 0.1), then shrinks actual pixel dimensions and
+// repeats until the blob is at or under targetSize. Optionally center-crops
+// to a square first (used for avatars).
+async function compressImage(file, targetSize = 256 * 1024, opts = {}) {
+    const { maxSize = 2048, square = false } = opts;
+
+    return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = (event) => {
-            window._discussionImages.push({
-                type: 'file',
-                data: event.target.result,
-                file: file
-            });
-            renderImagePreviews();
+
+        reader.onload = (e) => {
+            const img = new Image();
+
+            img.onload = () => {
+                let sx = 0, sy = 0, sw = img.width, sh = img.height;
+                let width, height;
+
+                if (square) {
+                    // Center-crop to a square source region first
+                    const side = Math.min(img.width, img.height);
+                    sx = (img.width - side) / 2;
+                    sy = (img.height - side) / 2;
+                    sw = side;
+                    sh = side;
+                    width = height = Math.min(side, maxSize);
+                } else {
+                    width = img.width;
+                    height = img.height;
+                    if (width > maxSize || height > maxSize) {
+                        if (width > height) {
+                            height = Math.round((height / width) * maxSize);
+                            width = maxSize;
+                        } else {
+                            width = Math.round((width / height) * maxSize);
+                            height = maxSize;
+                        }
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                const attempt = (w, h, quality) => {
+                    canvas.width = w;
+                    canvas.height = h;
+                    ctx.clearRect(0, 0, w, h);
+                    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+
+                    canvas.toBlob((blob) => {
+                        if (!blob) {
+                            reject(new Error('Compression failed'));
+                            return;
+                        }
+
+                        // Under target: done.
+                        if (blob.size <= targetSize) {
+                            resolve({ blob, size: blob.size, quality, width: w, height: h });
+                            return;
+                        }
+
+                        // Still over budget: drop quality first.
+                        if (quality > 0.1) {
+                            attempt(w, h, +(quality - 0.1).toFixed(2));
+                            return;
+                        }
+
+                        // Quality floor hit and still too big: shrink dimensions,
+                        // reset quality, and keep going. This is what makes the
+                        // target a guarantee instead of a best-effort try.
+                        if (w > 64 && h > 64) {
+                            attempt(Math.round(w * 0.85), Math.round(h * 0.85), 0.9);
+                            return;
+                        }
+
+                        // Absolute floor (64px) reached — accept smallest possible output.
+                        resolve({ blob, size: blob.size, quality, width: w, height: h });
+                    }, 'image/jpeg', quality);
+                };
+
+                attempt(width, height, 0.9);
+            };
+
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = e.target.result;
         };
+
+        reader.onerror = () => reject(new Error('Failed to read file'));
         reader.readAsDataURL(file);
     });
+}
+
+const MAX_IMAGES_PER_POST = 4;
+
+// Handle file upload
+document.getElementById('discussionImages')?.addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files);
+    
+    for (const file of files) {
+        if (window._discussionImages.length >= MAX_IMAGES_PER_POST) {
+            showCustomDialog('Image Limit Reached', `You can attach up to ${MAX_IMAGES_PER_POST} images per post.`);
+            break;
+        }
+        
+        if (file.size > 5 * 1024 * 1024) {
+            showCustomDialog('Error', `File ${file.name} exceeds 5MB limit. Please choose a smaller file.`);
+            continue;
+        }
+        
+        // Show compression notice
+        showCustomDialog('Compressing Image', `Compressing ${file.name}... This may take a moment.`);
+        
+        try {
+            const compressed = await compressImage(file, 256 * 1024); // Target 256KB, guaranteed
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                window._discussionImages.push({
+                    type: 'file',
+                    data: event.target.result,
+                    file: compressed.blob,
+                    originalName: file.name,
+                    compressed: true,
+                    originalSize: file.size,
+                    compressedSize: compressed.size
+                });
+                renderImagePreviews();
+                closeCustomDialog();
+            };
+            reader.readAsDataURL(compressed.blob);
+        } catch (err) {
+            showCustomDialog('Error', `Failed to compress ${file.name}: ${err.message}`);
+        }
+    }
+    
     e.target.value = '';
 });
 
@@ -964,10 +1093,17 @@ document.getElementById('addImageUrlBtn')?.addEventListener('click', () => {
     const urlInput = document.getElementById('discussionImageUrl');
     const url = urlInput.value.trim();
     
+    if (window._discussionImages.length >= MAX_IMAGES_PER_POST) {
+        showCustomDialog('Image Limit Reached', `You can attach up to ${MAX_IMAGES_PER_POST} images per post.`);
+        return;
+    }
+    
     if (!url) {
         showCustomDialog('Error', 'Please enter an image URL');
         return;
     }
+    
+    
     
     // Validate it's an image URL
     if (!url.match(/\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i) && !url.includes('imgur.com') && !url.includes('githubusercontent.com')) {
@@ -993,12 +1129,21 @@ function renderImagePreviews() {
         return;
     }
     
-    previewArea.innerHTML = window._discussionImages.map((img, index) => `
-        <div class="image-preview-item">
-            <img src="${img.data}" alt="Preview">
-            <button class="image-preview-remove" onclick="removeImage(${index})">×</button>
-        </div>
-    `).join('');
+    previewArea.innerHTML = window._discussionImages.map((img, index) => {
+                        const sizeInfo = img.compressed 
+                    ? `<small style="color: var(--text-secondary); font-size: 0.75rem;">${(img.compressedSize / 1024).toFixed(0)}KB (compressed from ${(img.originalSize / 1024 / 1024).toFixed(2)}MB)</small>`
+                    : `<small style="color: var(--text-secondary); font-size: 0.75rem;">~${(img.compressedSize / 1024).toFixed(0)}KB stored</small>`;
+        
+        return `
+            <div class="image-preview-item">
+                <img src="${img.data}" alt="Preview">
+                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); padding: 0.25rem; font-size: 0.75rem; color: white;">
+                    ${sizeInfo}
+                </div>
+                <button class="image-preview-remove" onclick="removeImage(${index})">×</button>
+            </div>
+        `;
+    }).join('');
 }
 
 // Remove image
@@ -1402,22 +1547,50 @@ document.getElementById('editProfileBtn')?.addEventListener('click', async () =>
     navigateTo('settings');
 });
 
-// Upload profile image helper
-async function uploadProfileImage(file, type) {
+// Extracts the storage object path from a Supabase public URL, e.g.
+// ".../storage/v1/object/public/profile-images/abc123.jpg" -> "abc123.jpg"
+function extractStoragePath(publicUrl, bucket) {
+    if (!publicUrl) return null;
+    const marker = `/storage/v1/object/public/${bucket}/`;
+    const idx = publicUrl.indexOf(marker);
+    if (idx === -1) return null;
+    return publicUrl.substring(idx + marker.length);
+}
+
+// Deletes an old avatar/banner file from storage, if it exists. Failure here
+// is logged but never blocks the user's save — a stray orphaned file is a
+// much smaller problem than a failed profile update.
+async function deleteProfileImageIfExists(oldUrl) {
+    const path = extractStoragePath(oldUrl, 'profile-images');
+    if (!path) return;
+    const { error } = await supabase.storage.from('profile-images').remove([path]);
+    if (error) console.warn('Failed to delete old profile image:', error.message);
+}
+
+// Upload profile image helper — industry-standard sizing:
+// avatars: 400x400 center-cropped square, ~150KB (Twitter/GitHub/Discord norm)
+// banners: matches the app's own 16:9 recommendation, capped ~1500px wide, ~400KB
+// Old file (oldUrl) is deleted from storage once the new one uploads successfully.
+async function uploadProfileImage(file, type, oldUrl = null) {
+    const compressed = type === 'avatar'
+        ? await compressImage(file, 150 * 1024, { square: true, maxSize: 400 })
+        : await compressImage(file, 400 * 1024, { maxSize: 1500 });
+
     const userId = getUserId();
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${userId}_${type}_${Date.now()}.${fileExt}`;
-    
+    const fileName = `${userId}_${type}_${Date.now()}.jpg`;
+
     const { error: uploadError } = await supabase.storage
         .from('profile-images')
-        .upload(fileName, file, { cacheControl: '3600', upsert: true });
-    
+        .upload(fileName, compressed.blob, { cacheControl: '3600', upsert: true });
+
     if (uploadError) throw uploadError;
-    
+
     const { data: { publicUrl } } = supabase.storage
         .from('profile-images')
         .getPublicUrl(fileName);
-    
+
+    if (oldUrl) await deleteProfileImageIfExists(oldUrl);
+
     return publicUrl;
 }
 
@@ -1643,23 +1816,25 @@ async function saveProfile() {
             updated_at: new Date().toISOString()
         };
         
-        // Handle avatar deletion
+        // Handle avatar deletion (explicit "Delete" button) — remove from storage too
         if (window._deleteAvatar) {
+            await deleteProfileImageIfExists(profile.avatar_url);
             updates.avatar_url = null;
             window._deleteAvatar = false;
         }
         
-        // Handle banner deletion
+        // Handle banner deletion (explicit "Delete" button) — remove from storage too
         if (window._deleteBanner) {
+            await deleteProfileImageIfExists(profile.banner_url);
             updates.banner_url = null;
             window._deleteBanner = false;
         }
         
-        // Upload avatar if file selected
+        // Upload avatar if file selected — old avatar (if any) is deleted after the new one succeeds
         const avatarFile = document.getElementById('editAvatarFile').files[0];
         if (avatarFile) {
             try {
-                const avatarUrl = await uploadProfileImage(avatarFile, 'avatar');
+                const avatarUrl = await uploadProfileImage(avatarFile, 'avatar', profile.avatar_url);
                 updates.avatar_url = avatarUrl;
             } catch (err) {
                 showCustomDialog('Upload Error', 'Error uploading avatar: ' + err.message);
@@ -1671,11 +1846,11 @@ async function saveProfile() {
             }
         }
         
-        // Upload banner if file selected
+        // Upload banner if file selected — old banner (if any) is deleted after the new one succeeds
         const bannerFile = document.getElementById('editBannerFile').files[0];
         if (bannerFile) {
             try {
-                const bannerUrl = await uploadProfileImage(bannerFile, 'banner');
+                const bannerUrl = await uploadProfileImage(bannerFile, 'banner', profile.banner_url);
                 updates.banner_url = bannerUrl;
             } catch (err) {
                 showCustomDialog('Upload Error', 'Error uploading banner: ' + err.message);

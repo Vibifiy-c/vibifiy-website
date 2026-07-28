@@ -2191,8 +2191,17 @@ a:hover {
 .post-view-images img {
     width: 100%;
     border-radius: 8px;
-    max-height: 400px;
-    object-fit: cover;
+    max-height: none;
+    object-fit: contain;
+    display: block;
+}
+
+.discussion-image {
+    width: 100%;
+    border-radius: 8px;
+    max-height: none;
+    object-fit: contain;
+    display: block;
 }
 
 .post-view-meta {
