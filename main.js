@@ -1208,30 +1208,79 @@ window.deleteDiscussion = async (id) => {
     showCustomDialog('Delete Post', 'Are you sure you want to delete this post? This cannot be undone.', async () => {
         try {
             // 1. Fetch the post first to get the image URLs
-            const { data: post } = await supabase.from('discussions').select('images').eq('id', id).single();
+            const { data: post, error: fetchError } = await supabase
+                .from('discussions')
+                .select('images')
+                .eq('id', id)
+                .single();
+
+            if (fetchError) {
+                console.error('Error fetching post:', fetchError);
+            }
+
+            console.log('Post data:', post);
 
             // 2. Delete images from storage if they exist
-            if (post && post.images && post.images.length > 0) {
-                const pathsToDelete = post.images.map(img => {
-                    // Extract the file path from the public URL
-                    // URL format: .../storage/v1/object/public/discussion-images/PATH_HERE
-                    const url = img.url;
-                    const marker = '/discussion-images/';
-                    const idx = url.indexOf(marker);
-                    return idx !== -1 ? url.substring(idx + marker.length) : null;
-                }).filter(p => p !== null);
-
-                if (pathsToDelete.length > 0) {
-                    const { error: storageError } = await supabase.storage
-                        .from('discussion-images')
-                        .remove(pathsToDelete);
-                    
-                    if (storageError) {
-                        console.warn('Failed to delete some images from storage:', storageError.message);
-                    } else {
-                        console.log('Successfully deleted images from storage');
+            if (post && post.images) {
+                // Parse images if it's a string (JSON stored as text)
+                let imagesArray = post.images;
+                if (typeof imagesArray === 'string') {
+                    try {
+                        imagesArray = JSON.parse(imagesArray);
+                    } catch (e) {
+                        console.error('Failed to parse images JSON:', e);
+                        imagesArray = [];
                     }
                 }
+
+                console.log('Images to delete:', imagesArray);
+
+                if (Array.isArray(imagesArray) && imagesArray.length > 0) {
+                    const pathsToDelete = imagesArray.map(img => {
+                        if (!img || !img.url) return null;
+                        
+                        const url = img.url;
+                        console.log('Processing URL:', url);
+                        
+                        // Try multiple URL formats
+                        const markers = [
+                            '/discussion-images/',
+                            '/storage/v1/object/public/discussion-images/',
+                            'discussion-images/'
+                        ];
+                        
+                        for (const marker of markers) {
+                            const idx = url.indexOf(marker);
+                            if (idx !== -1) {
+                                const path = url.substring(idx + marker.length);
+                                console.log('Extracted path:', path);
+                                return path;
+                            }
+                        }
+                        
+                        console.warn('Could not extract path from URL:', url);
+                        return null;
+                    }).filter(p => p !== null);
+
+                    console.log('Paths to delete:', pathsToDelete);
+
+                    if (pathsToDelete.length > 0) {
+                        const { data: deleteData, error: storageError } = await supabase.storage
+                            .from('discussion-images')
+                            .remove(pathsToDelete);
+                        
+                        if (storageError) {
+                            console.error('Failed to delete images from storage:', storageError);
+                            console.error('Storage error details:', storageError.message, storageError.details);
+                        } else {
+                            console.log('Successfully deleted images from storage:', deleteData);
+                        }
+                    } else {
+                        console.warn('No valid paths extracted from images');
+                    }
+                }
+            } else {
+                console.log('No images found in post');
             }
 
             // 3. Delete any reposts that reference this post
@@ -1249,6 +1298,7 @@ window.deleteDiscussion = async (id) => {
                 await initDiscussions();
             }
         } catch (err) {
+            console.error('Delete error:', err);
             showCustomDialog('Error', 'Failed to delete: ' + err.message);
         }
     });
