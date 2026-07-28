@@ -1207,13 +1207,40 @@ document.getElementById('submitDiscussionBtn')?.addEventListener('click', async 
 window.deleteDiscussion = async (id) => {
     showCustomDialog('Delete Post', 'Are you sure you want to delete this post? This cannot be undone.', async () => {
         try {
-            // Delete any reposts that reference this post
+            // 1. Fetch the post first to get the image URLs
+            const { data: post } = await supabase.from('discussions').select('images').eq('id', id).single();
+
+            // 2. Delete images from storage if they exist
+            if (post && post.images && post.images.length > 0) {
+                const pathsToDelete = post.images.map(img => {
+                    // Extract the file path from the public URL
+                    // URL format: .../storage/v1/object/public/discussion-images/PATH_HERE
+                    const url = img.url;
+                    const marker = '/discussion-images/';
+                    const idx = url.indexOf(marker);
+                    return idx !== -1 ? url.substring(idx + marker.length) : null;
+                }).filter(p => p !== null);
+
+                if (pathsToDelete.length > 0) {
+                    const { error: storageError } = await supabase.storage
+                        .from('discussion-images')
+                        .remove(pathsToDelete);
+                    
+                    if (storageError) {
+                        console.warn('Failed to delete some images from storage:', storageError.message);
+                    } else {
+                        console.log('Successfully deleted images from storage');
+                    }
+                }
+            }
+
+            // 3. Delete any reposts that reference this post
             await supabase.from('discussions').delete().eq('repost_of', id);
             
-            // Also delete any comments on this post
+            // 4. Delete any comments on this post
             await supabase.from('comments').delete().eq('discussion_id', id);
             
-            // Now delete the post
+            // 5. Finally, delete the post from the database
             const { error } = await supabase.from('discussions').delete().eq('id', id);
             
             if (error) {
