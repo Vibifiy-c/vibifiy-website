@@ -860,7 +860,7 @@ function renderDiscussionPost(discussion) {
                     <div class="author-avatar">${discussion.user_name.charAt(0).toUpperCase()}</div>
                     <div><h4>${escapeHtml(discussion.user_name)}</h4><span class="discussion-date">${date}</span></div>
                 </div>
-                ${isOwner ? `<div class="discussion-actions"><button class="btn-icon" onclick="event.stopPropagation(); deleteDiscussion('${discussion.id}')">️</button></div>` : ''}
+                ${isOwner ? `<div class="discussion-actions"><button class="btn-icon" onclick="event.stopPropagation(); deleteDiscussion('${discussion.id}')">🗑️</button></div>` : ''}
             </div>
             <h3 class="discussion-title">${escapeHtml(discussion.title)}</h3>
             <div class="discussion-content">${escapeHtml(discussion.content)}</div>
@@ -1062,8 +1062,8 @@ document.getElementById('submitDiscussionBtn')?.addEventListener('click', async 
 window.deleteDiscussion = async (id) => {
     showCustomDialog('Delete Post', 'Are you sure you want to delete this post? This cannot be undone.', async () => {
         try {
-            // First, nullify any reposts that reference this post
-            await supabase.from('discussions').update({ repost_of: null }).eq('repost_of', id);
+            // Delete any reposts that reference this post
+            await supabase.from('discussions').delete().eq('repost_of', id);
             
             // Also delete any comments on this post
             await supabase.from('comments').delete().eq('discussion_id', id);
