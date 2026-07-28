@@ -1177,7 +1177,7 @@ document.getElementById('submitDiscussionBtn')?.addEventListener('click', async 
         for (const img of window._discussionImages) {
             if (img.type === 'file') {
                 const uploadResult = await uploadDiscussionImage(img.file);
-                uploadedImages.push({ name: img.file.name, url: uploadResult });
+                uploadedImages.push({ name: img.originalName || 'image.jpg', url: uploadResult });
             } else if (img.type === 'url') {
                 uploadedImages.push({ name: 'image', url: img.data });
             }
