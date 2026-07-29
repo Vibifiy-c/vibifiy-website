@@ -168,7 +168,11 @@ function navigateTo(pageId, params = {}) {
     const activeLink = document.querySelector(`.nav-link[href="#${pageId}"]`);
     if (activeLink) activeLink.classList.add('active');
     
-    history.pushState({ page: pageId, params }, '', `#${pageId}`);
+    let url = `#${pageId}`;
+    if (pageId === 'post-view' && params.postId) {
+        url = `#/post/${params.postId}`;
+    }
+    history.pushState({ page: pageId, params }, '', url);
     
     if (pageId === 'reviews') loadReviews();
     if (pageId === 'discussions') initDiscussions();
@@ -2213,19 +2217,19 @@ window.cancelReply = (commentId) => {
 
 // Submit reply
 window.submitReply = async (parentCommentId, discussionId) => {
-    const name = document.getElementById(`reply-name-${parentCommentId}`)?.value.trim();
     const content = document.getElementById(`reply-text-${parentCommentId}`)?.value.trim();
     
-    if (!name || !content) {
-        showCustomDialog('Missing Info', 'Please enter your name and a reply.');
+    if (!content) {
+        showCustomDialog('Missing Info', 'Please enter a reply.');
         return;
     }
     
+    const profile = await getOrCreateProfile();
     const userId = getUserId();
     const { error } = await supabase.from('comments').insert([{
         discussion_id: discussionId,
         parent_comment_id: parentCommentId,
-        user_name: name,
+        user_name: profile.display_name || 'Anonymous',
         user_id: userId,
         content: content
     }]);
@@ -2294,7 +2298,16 @@ async function setupCommentForm() {
     
     // Submit comment
     submitBtn?.addEventListener('click', async () => {
-        const postId = window.location.hash.split('/').pop();
+        // Get postId from URL: #/post/{postId}
+        const hash = window.location.hash;
+        const parts = hash.split('/');
+        const postId = parts.length > 1 ? parts[1] : null;
+        
+        if (!postId || postId.startsWith('#')) {
+            showCustomDialog('Error', 'Could not determine which post to comment on.');
+            return;
+        }
+        
         const content = commentInput.value.trim();
         
         if (!content) return;
