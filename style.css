@@ -2471,3 +2471,229 @@ a:hover {
     border-color: #4caf50;
     background: rgba(76, 175, 80, 0.1);
 }
+
+/* YouTube-Style Comment Form */
+.youtube-comment-form {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.comment-form-user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.comment-form-user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.comment-form-content {
+    flex: 1;
+}
+
+.comment-form-content input {
+    width: 100%;
+    padding: 0.75rem 0;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+}
+
+.comment-form-content input:focus {
+    outline: none;
+    border-bottom-color: var(--accent);
+}
+
+.comment-form-content input::placeholder {
+    color: var(--text-secondary);
+}
+
+.comment-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+.comment-form-content input:focus + .comment-form-actions,
+.comment-form-actions.has-content {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.comment-form-actions .btn-outline,
+.comment-form-actions .btn-primary {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 20px;
+}
+
+.comment-form-actions .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* YouTube-Style Comment Items */
+.youtube-comment-item {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.youtube-comment-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.youtube-comment-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.youtube-comment-body {
+    flex: 1;
+}
+
+.youtube-comment-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.youtube-comment-author {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.youtube-comment-date {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.youtube-comment-text {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+}
+
+.youtube-comment-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.youtube-comment-action-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.2s;
+}
+
+.youtube-comment-action-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.youtube-comment-action-btn.delete-btn:hover {
+    color: #e53935;
+    background: rgba(229, 57, 53, 0.1);
+}
+
+/* Nested Replies */
+.youtube-comment-replies {
+    margin-left: 3rem;
+    margin-top: 1rem;
+    padding-left: 1rem;
+    border-left: 2px solid var(--border);
+}
+
+.youtube-reply-item {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.youtube-reply-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--text-secondary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.youtube-reply-body {
+    flex: 1;
+}
+
+.youtube-reply-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.youtube-reply-author {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+
+.youtube-reply-date {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.youtube-reply-text {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}

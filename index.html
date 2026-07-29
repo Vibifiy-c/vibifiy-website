@@ -252,12 +252,20 @@
                 </div>
                 
                 <div class="comments-section-full">
-                    <h3 class="comments-section-title">💬 Comments</h3>
+                    <h3 class="comments-section-title"> Comments</h3>
                     
-                    <div class="comment-form-full">
-                        <input type="text" id="viewCommentName" placeholder="Your name">
-                        <textarea id="viewCommentText" placeholder="Write a comment..." rows="3"></textarea>
-                        <button class="btn-primary" id="submitViewCommentBtn" style="width: auto;">Post Comment</button>
+                    <div class="youtube-comment-form">
+                        <div class="comment-form-user-avatar" id="commentFormAvatar">
+                            <span id="commentFormAvatarLetter">?</span>
+                            <img id="commentFormAvatarImg" src="" alt="" style="display: none;">
+                        </div>
+                        <div class="comment-form-content">
+                            <input type="text" id="viewCommentText" placeholder="Add a comment...">
+                            <div class="comment-form-actions">
+                                <button class="btn-outline" id="cancelCommentBtn" style="display: none;">Cancel</button>
+                                <button class="btn-primary" id="submitViewCommentBtn" disabled>Comment</button>
+                            </div>
+                        </div>
                     </div>
                     
                     <div id="viewCommentsList" class="comments-threaded"></div>

@@ -2059,6 +2059,9 @@ async function loadPostView(postId) {
     // Load comments
     await loadViewComments(postId);
     
+    // Setup comment form with user info
+    await setupCommentForm();
+    
     // Scroll to top
     window.scrollTo(0, 0);
 }
@@ -2099,7 +2102,53 @@ async function loadViewComments(postId) {
         }
     });
     
-    container.innerHTML = rootComments.map(c => renderCommentThread(c)).join('');
+    container.innerHTML = rootComments.map(c => renderYouTubeComment(c)).join('');
+}
+
+// Render YouTube-style comment
+function renderYouTubeComment(comment, isReply = false) {
+    const date = new Date(comment.created_at).toLocaleDateString();
+    const initial = (comment.user_name || 'U').charAt(0).toUpperCase();
+    const currentUserId = getUserId();
+    const isOwner = comment.user_id === currentUserId;
+    
+    const repliesHtml = comment.replies && comment.replies.length > 0
+        ? `<div class="youtube-comment-replies">${comment.replies.map(r => renderYouTubeComment(r, true)).join('')}</div>`
+        : '';
+    
+    if (isReply) {
+        return `
+            <div class="youtube-reply-item" data-comment-id="${comment.id}">
+                <div class="youtube-reply-avatar">${initial}</div>
+                <div class="youtube-reply-body">
+                    <div class="youtube-reply-header">
+                        <span class="youtube-reply-author">${escapeHtml(comment.user_name)}</span>
+                        <span class="youtube-reply-date">${date}</span>
+                    </div>
+                    <div class="youtube-reply-text">${escapeHtml(comment.content)}</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    return `
+        <div class="youtube-comment-item" data-comment-id="${comment.id}">
+            <div class="youtube-comment-avatar">${initial}</div>
+            <div class="youtube-comment-body">
+                <div class="youtube-comment-header">
+                    <span class="youtube-comment-author">${escapeHtml(comment.user_name)}</span>
+                    <span class="youtube-comment-date">${date}</span>
+                </div>
+                <div class="youtube-comment-text">${escapeHtml(comment.content)}</div>
+                <div class="youtube-comment-actions">
+                    <button class="youtube-comment-action-btn">👍 Like</button>
+                    <button class="youtube-comment-action-btn" onclick="showReplyForm('${comment.id}', '${comment.discussion_id}')">↩ Reply</button>
+                    ${isOwner ? `<button class="youtube-comment-action-btn delete-btn" onclick="deleteCommentFromView('${comment.id}', '${comment.discussion_id}')">🗑️ Delete</button>` : ''}
+                </div>
+                ${repliesHtml}
+            </div>
+        </div>
+    `;
 }
 
 // Render a comment thread recursively
@@ -2200,32 +2249,77 @@ window.deleteCommentFromView = async (commentId, discussionId) => {
     });
 };
 
-// Submit comment on post view page
-document.getElementById('submitViewCommentBtn')?.addEventListener('click', async () => {
-    const postId = window.location.hash.split('/').pop();
-    const name = document.getElementById('viewCommentName')?.value.trim();
-    const content = document.getElementById('viewCommentText')?.value.trim();
+// Setup YouTube-style comment form
+async function setupCommentForm() {
+    const profile = await getOrCreateProfile();
+    const avatarLetter = document.getElementById('commentFormAvatarLetter');
+    const avatarImg = document.getElementById('commentFormAvatarImg');
+    const commentInput = document.getElementById('viewCommentText');
+    const submitBtn = document.getElementById('submitViewCommentBtn');
+    const cancelBtn = document.getElementById('cancelCommentBtn');
+    const formActions = document.querySelector('.comment-form-actions');
     
-    if (!name || !content) {
-        showCustomDialog('Missing Info', 'Please enter your name and a comment.');
-        return;
-    }
-    
-    const userId = getUserId();
-    const { error } = await supabase.from('comments').insert([{
-        discussion_id: postId,
-        user_name: name,
-        user_id: userId,
-        content: content
-    }]);
-    
-    if (error) {
-        showCustomDialog('Error', 'Failed to post comment: ' + error.message);
+    // Set user avatar
+    if (profile.avatar_url) {
+        avatarImg.src = profile.avatar_url;
+        avatarImg.style.display = 'block';
+        avatarLetter.style.display = 'none';
     } else {
-        document.getElementById('viewCommentText').value = '';
-        await loadViewComments(postId);
+        avatarLetter.textContent = (profile.display_name || 'U').charAt(0).toUpperCase();
     }
-});
+    
+    // Show/hide actions on focus
+    commentInput?.addEventListener('focus', () => {
+        formActions?.classList.add('has-content');
+    });
+    
+    // Enable/disable submit button
+    commentInput?.addEventListener('input', () => {
+        const hasContent = commentInput.value.trim().length > 0;
+        submitBtn.disabled = !hasContent;
+        if (hasContent) {
+            formActions?.classList.add('has-content');
+        } else {
+            formActions?.classList.remove('has-content');
+        }
+    });
+    
+    // Cancel button
+    cancelBtn?.addEventListener('click', () => {
+        commentInput.value = '';
+        submitBtn.disabled = true;
+        formActions?.classList.remove('has-content');
+        commentInput.blur();
+    });
+    
+    // Submit comment
+    submitBtn?.addEventListener('click', async () => {
+        const postId = window.location.hash.split('/').pop();
+        const content = commentInput.value.trim();
+        
+        if (!content) return;
+        
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Posting...';
+        
+        const { error } = await supabase.from('comments').insert([{
+            discussion_id: postId,
+            user_name: profile.display_name || 'Anonymous',
+            user_id: getUserId(),
+            content: content
+        }]);
+        
+        if (error) {
+            showCustomDialog('Error', 'Failed to post comment: ' + error.message);
+        } else {
+            commentInput.value = '';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Comment';
+            formActions?.classList.remove('has-content');
+            await loadViewComments(postId);
+        }
+    });
+}
 
 // Like post (stored in localStorage for now)
 window.likePost = (postId) => {
