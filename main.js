@@ -168,10 +168,14 @@ function navigateTo(pageId, params = {}) {
     const activeLink = document.querySelector(`.nav-link[href="#${pageId}"]`);
     if (activeLink) activeLink.classList.add('active');
     
+    // Build URL with UUID for post-view and other dynamic routes
     let url = `#${pageId}`;
     if (pageId === 'post-view' && params.postId) {
         url = `#/post/${params.postId}`;
+    } else if (pageId === 'user-profile' && params.username) {
+        url = `#/profile/${params.username}`;
     }
+    
     history.pushState({ page: pageId, params }, '', url);
     
     if (pageId === 'reviews') loadReviews();
@@ -575,18 +579,23 @@ function handleRoute(hash) {
         return;
     }
     
-    const parts = hash.split('/').filter(p => p);
+    // Remove leading # and split by /
+    const cleanHash = hash.replace(/^#\/?/, '');
+    const parts = cleanHash.split('/').filter(p => p);
     
     if (parts[0] === 'post' && parts[1]) {
+        // URL: #/post/{uuid}
         navigateTo('post-view', { postId: parts[1] });
     } else if (parts[0] === 'profile' && parts[1]) {
+        // URL: #/profile/{username}
         navigateTo('user-profile', { username: parts[1] });
     } else if (parts[0] === 'settings' && parts[1]) {
+        // URL: #/settings/{section}
         navigateTo('settings');
         setTimeout(() => loadSettingsSection(parts[1]), 100);
     } else if (parts[0] === 'settings') {
         navigateTo('settings');
-    } else if (parts[0] === 'dashboard') {
+    } else if (parts[0] === 'dashboard' || parts[0] === '') {
         navigateTo('dashboard');
     } else if (parts[0] === 'download') {
         navigateTo('download');
@@ -919,6 +928,9 @@ async function initDiscussions() {
 
 // Image state
 window._discussionImages = [];
+
+// Current post ID (for comment form)
+window._currentPostId = null;
 
 // Toggle new post form
 document.getElementById('newPostToggle')?.addEventListener('click', async () => {
@@ -1991,6 +2003,9 @@ async function saveProfile() {
 
 // Load single post view
 async function loadPostView(postId) {
+    // Store the current post ID globally
+    window._currentPostId = postId;
+    
     const contentEl = document.getElementById('postViewContent');
     const commentsListEl = document.getElementById('viewCommentsList');
     
@@ -2298,12 +2313,10 @@ async function setupCommentForm() {
     
     // Submit comment
     submitBtn?.addEventListener('click', async () => {
-        // Get postId from URL: #/post/{postId}
-        const hash = window.location.hash;
-        const parts = hash.split('/');
-        const postId = parts.length > 1 ? parts[1] : null;
+        // Use the global current post ID
+        const postId = window._currentPostId;
         
-        if (!postId || postId.startsWith('#')) {
+        if (!postId) {
             showCustomDialog('Error', 'Could not determine which post to comment on.');
             return;
         }
