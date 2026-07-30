@@ -94,14 +94,32 @@
         }
     </style>
     
-    <!-- THIS IS THE SCRIPT THAT HANDLES THE REDIRECT -->
     <script>
-        // Save the path the user tried to visit
-        sessionStorage.setItem('vibifiy_redirect', window.location.pathname + window.location.search);
+        // Detect the current path and determine where to redirect
+        const currentPath = window.location.pathname;
+        const currentRepo = 'vibifiy-website'; // Your repo name
         
-        // Redirect to the homepage (root domain) after a short delay
+        // Save the original path the user tried to visit
+        sessionStorage.setItem('vibifiy_redirect', currentPath + window.location.search);
+        
+        // Determine the correct homepage URL
+        let redirectUrl = '/';
+        
+        // If we're on github.io and the path doesn't already include the repo name
+        if (window.location.hostname.includes('github.io') && !currentPath.includes(currentRepo)) {
+            // Check if we're at the root or already in a subdirectory
+            if (currentPath === '/' || currentPath === '') {
+                // At root - redirect to repo subdirectory
+                redirectUrl = `/${currentRepo}/`;
+            } else {
+                // In a subdirectory but missing repo name - add it
+                redirectUrl = `/${currentRepo}${currentPath}`;
+            }
+        }
+        
+        // Redirect after a short delay
         setTimeout(() => {
-            window.location.href = '/';
+            window.location.href = redirectUrl;
         }, 3000);
     </script>
 </head>
@@ -127,10 +145,15 @@
         </p>
         
         <div class="redirect-notice">
-            ⏳ Redirecting you to Vibifiy homepage...
+             Redirecting you to Vibifiy homepage...
         </div>
         
-        <a href="/" class="home-link">Go to Homepage</a>
+        <a href="/" class="home-link" id="homeLink">Go to Homepage</a>
     </div>
+    
+    <script>
+        // Update the home link href dynamically
+        document.getElementById('homeLink').href = redirectUrl;
+    </script>
 </body>
-</html>
+</html> 
