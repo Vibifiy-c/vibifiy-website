@@ -143,8 +143,60 @@ themeToggle.addEventListener('click', () => {
 const navLinks = document.querySelectorAll('.nav-link');
 const pages = document.querySelectorAll('.page');
 
-// Enhanced navigation with URL routing (Clean URLs for vibifiy.js.org)
+// Define the base path for the repository
+// When you move to vibifiy.js.org, change this to '/'
+const BASE_PATH = window.location.hostname.includes('github.io') ? '/vibifiy-website/' : '/';
+
+// Enhanced navigation with URL routing
 function navigateTo(pageId, params = {}) {
+    const idMap = {
+        'dashboard': 'page-dashboard',
+        'download': 'page-download',
+        'reviews': 'page-reviews',
+        'bug': 'page-bug',
+        'discussions': 'page-discussions',
+        'profile': 'page-profile',
+        'profile-edit': 'page-profile-edit',
+        'settings': 'page-settings',
+        'post-view': 'page-post-view'
+    };
+    
+    const targetId = idMap[pageId] || 'page-dashboard';
+    
+    pages.forEach(page => page.classList.remove('active'));
+    navLinks.forEach(link => link.classList.remove('active'));
+    
+    const targetPage = document.getElementById(targetId);
+    if (targetPage) targetPage.classList.add('active');
+    
+    const activeLink = document.querySelector(`.nav-link[data-page="${pageId}"]`);
+    if (activeLink) activeLink.classList.add('active');
+    
+    // Build clean URL structure using BASE_PATH
+    let url = BASE_PATH;
+    if (pageId === 'post-view' && params.postId) {
+        url = `${BASE_PATH}discussions/post/${params.postId}`;
+    } else if (pageId === 'discussions') {
+        url = `${BASE_PATH}discussions`;
+    } else if (pageId === 'user-profile' && params.username) {
+        url = `${BASE_PATH}profile/${params.username}`;
+    } else if (pageId === 'settings' && params.section) {
+        url = `${BASE_PATH}settings/${params.section}`;
+    } else if (pageId !== 'dashboard') {
+        url = `${BASE_PATH}${pageId}`;
+    }
+    
+    history.pushState({ page: pageId, params }, '', url);
+    
+    if (pageId === 'reviews') loadReviews();
+    if (pageId === 'discussions') initDiscussions();
+    if (pageId === 'profile') loadProfile();
+    if (pageId === 'profile-edit') loadProfileEdit();
+    if (pageId === 'settings') loadSettingsSection(params.section || 'account');
+    if (pageId === 'post-view') loadPostView(params.postId);
+    
+    window.scrollTo(0, 0);
+}
     const idMap = {
         'dashboard': 'page-dashboard',
         'download': 'page-download',
@@ -581,10 +633,17 @@ async function saveGeneralSettings() {
     alert('Settings saved!');
 }
 
-// Handle initial load and route changes (Clean URLs for vibifiy.js.org)
+// Handle initial load and route changes
 function handleRoute(pathname) {
-    // Clean up the path (remove old github pages prefix if it still exists, or just get the path)
-    let cleanPath = pathname.replace('/vibifiy-website', '');
+    // Remove the BASE_PATH to get the internal route
+    let cleanPath = pathname.replace(BASE_PATH, '/');
+    
+    if (!cleanPath || cleanPath === '/') {
+        navigateTo('dashboard');
+        return;
+    }
+    
+    const parts = cleanPath.split('/').filter(p => p);
     if (!cleanPath || cleanPath === '/') {
         navigateTo('dashboard');
         return;
