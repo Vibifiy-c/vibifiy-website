@@ -143,7 +143,7 @@ themeToggle.addEventListener('click', () => {
 const navLinks = document.querySelectorAll('.nav-link');
 const pages = document.querySelectorAll('.page');
 
-// Enhanced navigation with URL routing
+// Enhanced navigation with URL routing (Clean URLs for vibifiy.js.org)
 function navigateTo(pageId, params = {}) {
     const idMap = {
         'dashboard': 'page-dashboard',
@@ -165,24 +165,33 @@ function navigateTo(pageId, params = {}) {
     const targetPage = document.getElementById(targetId);
     if (targetPage) targetPage.classList.add('active');
     
-    const activeLink = document.querySelector(`.nav-link[href="#${pageId}"]`);
+    const activeLink = document.querySelector(`.nav-link[data-page="${pageId}"]`);
     if (activeLink) activeLink.classList.add('active');
     
-    // Build URL with UUID for post-view and other dynamic routes
-    let url = `#${pageId}`;
+    // Build clean URL structure: /discussions/post/{uuid}
+    let url = '/';
     if (pageId === 'post-view' && params.postId) {
-        url = `#/post/${params.postId}`;
+        url = `/discussions/post/${params.postId}`;
+    } else if (pageId === 'discussions') {
+        url = '/discussions';
     } else if (pageId === 'user-profile' && params.username) {
-        url = `#/profile/${params.username}`;
+        url = `/profile/${params.username}`;
+    } else if (pageId === 'settings' && params.section) {
+        url = `/settings/${params.section}`;
+    } else if (pageId === 'dashboard') {
+        url = '/';
+    } else if (pageId !== 'dashboard') {
+        url = `/${pageId}`;
     }
     
+    // Use pushState for clean URLs
     history.pushState({ page: pageId, params }, '', url);
     
     if (pageId === 'reviews') loadReviews();
     if (pageId === 'discussions') initDiscussions();
     if (pageId === 'profile') loadProfile();
     if (pageId === 'profile-edit') loadProfileEdit();
-    if (pageId === 'settings') loadSettingsSection('account');
+    if (pageId === 'settings') loadSettingsSection(params.section || 'account');
     if (pageId === 'post-view') loadPostView(params.postId);
     
     window.scrollTo(0, 0);
@@ -572,44 +581,56 @@ async function saveGeneralSettings() {
     alert('Settings saved!');
 }
 
-// Handle initial load and route changes
-function handleRoute(hash) {
-    if (!hash) {
+// Handle initial load and route changes (Clean URLs for vibifiy.js.org)
+function handleRoute(pathname) {
+    // Clean up the path (remove old github pages prefix if it still exists, or just get the path)
+    let cleanPath = pathname.replace('/vibifiy-website', '');
+    if (!cleanPath || cleanPath === '/') {
         navigateTo('dashboard');
         return;
     }
     
-    // Remove leading # and split by /
-    const cleanHash = hash.replace(/^#\/?/, '');
-    const parts = cleanHash.split('/').filter(p => p);
+    const parts = cleanPath.split('/').filter(p => p);
     
-    if (parts[0] === 'post' && parts[1]) {
-        // URL: #/post/{uuid}
-        navigateTo('post-view', { postId: parts[1] });
-    } else if (parts[0] === 'profile' && parts[1]) {
-        // URL: #/profile/{username}
-        navigateTo('user-profile', { username: parts[1] });
-    } else if (parts[0] === 'settings' && parts[1]) {
-        // URL: #/settings/{section}
-        navigateTo('settings');
-        setTimeout(() => loadSettingsSection(parts[1]), 100);
-    } else if (parts[0] === 'settings') {
-        navigateTo('settings');
-    } else if (parts[0] === 'dashboard' || parts[0] === '') {
-        navigateTo('dashboard');
-    } else if (parts[0] === 'download') {
-        navigateTo('download');
-    } else if (parts[0] === 'reviews') {
-        navigateTo('reviews');
-    } else if (parts[0] === 'bug') {
-        navigateTo('bug');
-    } else if (parts[0] === 'discussions') {
+    // Handle /discussions/post/{uuid}
+    if (parts[0] === 'discussions' && parts[1] === 'post' && parts[2]) {
+        navigateTo('post-view', { postId: parts[2] });
+    } 
+    // Handle /discussions
+    else if (parts[0] === 'discussions') {
         navigateTo('discussions');
-    } else if (parts[0] === 'profile') {
-        navigateTo('profile');
-    } else {
+    }
+    // Handle /profile/{username}
+    else if (parts[0] === 'profile' && parts[1]) {
+        navigateTo('user-profile', { username: parts[1] });
+    }
+    // Handle /settings/{section}
+    else if (parts[0] === 'settings' && parts[1]) {
+        navigateTo('settings', { section: parts[1] });
+    }
+    // Handle root or dashboard
+    else if (parts[0] === 'dashboard' || parts.length === 0) {
         navigateTo('dashboard');
     }
+    // Handle other top-level pages
+    else if (['download', 'reviews', 'bug', 'profile'].includes(parts[0])) {
+        navigateTo(parts[0]);
+    }
+    // Fallback
+    else {
+        navigateTo('dashboard');
+    }
+}
+
+// Check for redirects from 404.html on load
+function checkRedirect() {
+    const redirectPath = sessionStorage.getItem('vibifiy_redirect');
+    if (redirectPath) {
+        sessionStorage.removeItem('vibifiy_redirect');
+        handleRoute(redirectPath);
+        return true;
+    }
+    return false;
 }
 
 // Handle browser back/forward
@@ -1484,8 +1505,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         updateNavAvatar();
     }, 500);
-    const hash = window.location.hash.substring(1);
-    handleRoute(hash);
+    
+    // Check if we were redirected from a 404 (clean URL refresh)
+    if (!checkRedirect()) {
+        // Otherwise use the current pathname
+        handleRoute(window.location.pathname);
+    }
 });
 
 // ============================================
