@@ -8,19 +8,18 @@
     <script type="module" src="main.js" defer></script>
 </head>
 <body>
-    
-            <nav class="navbar">
+    <nav class="navbar">
         <div class="logo">
             <img src="logo.jpg" alt="Vibifiy Logo" class="logo-img">
             <span>Vibifiy</span>
         </div>
-        <!-- ... rest of the nav ... -->
-                        <div class="nav-links">
-            <a href="#" class="nav-link active" data-page="dashboard" onclick="navigateTo('dashboard'); return false;">Dashboard</a>
-            <a href="#" class="nav-link" data-page="download" onclick="navigateTo('download'); return false;">Download</a>
-            <a href="#" class="nav-link" data-page="reviews" onclick="navigateTo('reviews'); return false;">Reviews</a>
-            <a href="#" class="nav-link" data-page="bug" onclick="navigateTo('bug'); return false;">Bug Report</a>
-            <a href="#" class="nav-link" data-page="discussions" onclick="navigateTo('discussions'); return false;">Discussions</a>
+        
+        <div class="nav-links">
+            <a href="#" class="nav-link active" data-page="dashboard" onclick="event.preventDefault(); navigateTo('dashboard');">Dashboard</a>
+            <a href="#" class="nav-link" data-page="download" onclick="event.preventDefault(); navigateTo('download');">Download</a>
+            <a href="#" class="nav-link" data-page="reviews" onclick="event.preventDefault(); navigateTo('reviews');">Reviews</a>
+            <a href="#" class="nav-link" data-page="bug" onclick="event.preventDefault(); navigateTo('bug');">Bug Report</a>
+            <a href="#" class="nav-link" data-page="discussions" onclick="event.preventDefault(); navigateTo('discussions');">Discussions</a>
         </div>
 
         <div class="controls">
@@ -32,17 +31,17 @@
                     <img id="navAvatarImg" src="" alt="" style="display: none;">
                 </div>
                 <div class="nav-dropdown" id="navDropdown">
-                    <a href="#/profile" class="dropdown-item" id="dropdownProfile"> Profile</a>
-                    <a href="#/settings" class="dropdown-item">⚙️ Settings</a>
+                    <a href="#" class="dropdown-item" id="dropdownProfile" onclick="event.preventDefault(); navigateTo('profile');"> Profile</a>
+                    <a href="#" class="dropdown-item" onclick="event.preventDefault(); navigateTo('settings', { section: 'account' });">⚙️ Settings</a>
                     <div class="dropdown-divider"></div>
-                    <a href="#" class="dropdown-item" id="dropdownLogout">🚪 Logout</a>
+                    <a href="#" class="dropdown-item" id="dropdownLogout" onclick="event.preventDefault();">🚪 Logout</a>
                 </div>
             </div>
         </div>
     </nav>
 
     <main class="dashboard">
-                <!-- PAGE 1: DASHBOARD (ORGANIZATION SHOWCASE) -->
+        <!-- PAGE 1: DASHBOARD -->
         <section id="page-dashboard" class="page active">
             <div class="hero-section">
                 <h1>Building awesome open-source apps.</h1>
@@ -133,7 +132,7 @@
             </div>
         </section>
 
-                <!-- PAGE 5: DISCUSSIONS -->
+        <!-- PAGE 5: DISCUSSIONS -->
         <section id="page-discussions" class="page">
             <div class="discussions-container">
                 <div class="discussions-header">
@@ -141,10 +140,8 @@
                     <p>Share ideas, ask questions, and showcase your projects</p>
                 </div>
                 
-                <!-- New Post Button -->
                 <button class="btn-primary new-post-toggle" id="newPostToggle">+ New Post</button>
                 
-                <!-- Create Post Form (Hidden by default) -->
                 <div class="create-post-form" id="createPostForm" style="display: none;">
                     <div class="form-header">
                         <h3>Create a Discussion</h3>
@@ -161,7 +158,6 @@
                         <input type="text" id="discussionGitHubLink" placeholder="Paste a GitHub link (optional)">
                     </div>
                     
-                    <!-- Image Attachment Menu -->
                     <div class="image-attachment-section">
                         <div class="pin-menu-wrapper">
                             <button class="btn-icon pin-btn" id="pinMenuToggle" title="Add media">📌</button>
@@ -174,25 +170,22 @@
                             </div>
                         </div>
                         
-                        <!-- Image URL Input -->
                         <div class="image-url-input" id="imageUrlSection" style="display: none;">
                             <input type="url" id="discussionImageUrl" placeholder="Paste image URL (https://...)">
                             <button class="btn-icon-small" id="addImageUrlBtn">Add</button>
                         </div>
                         
-                        <!-- Image Preview Area -->
                         <div class="image-preview-area" id="imagePreviewArea"></div>
                     </div>
                     
                     <button type="button" class="btn-primary" id="submitDiscussionBtn">Post Discussion</button>
                 </div>
                 
-                <!-- Discussions List -->
                 <div id="discussionsList" class="discussions-list"></div>
             </div>
         </section>
 
-                <!-- PAGE 6: PROFILE -->
+        <!-- PAGE 6: PROFILE -->
         <section id="page-profile" class="page">
             <div class="profile-container">
                 <div class="profile-header-card">
@@ -221,7 +214,6 @@
                     <div class="links-grid"></div>
                 </div>
                 
-                <!-- README Section -->
                 <div class="readme-section">
                     <div class="readme-header">
                         <h3>📄 README</h3>
@@ -245,7 +237,7 @@
         <!-- SINGLE POST VIEW PAGE -->
         <section id="page-post-view" class="page">
             <div class="post-view-container">
-                <button class="btn-outline back-btn" onclick="navigateTo('discussions')">← Back to Discussions</button>
+                <button class="btn-outline back-btn" onclick="event.preventDefault(); navigateTo('discussions');">← Back to Discussions</button>
                 
                 <div id="postViewContent" class="post-view-content">
                     <!-- Post content loaded dynamically -->
@@ -280,22 +272,22 @@
                     <div class="sidebar-section">
                         <h3>Account</h3>
                         <ul>
-                            <li><a href="#/settings/account" class="sidebar-link" data-section="account">Public profile</a></li>
+                            <li><a href="#" class="sidebar-link" data-section="account" onclick="event.preventDefault(); navigateTo('settings', { section: 'account' });">Public profile</a></li>
                         </ul>
                     </div>
                     <div class="sidebar-section">
                         <h3>General</h3>
                         <ul>
-                            <li><a href="#/settings/general" class="sidebar-link" data-section="general">Appearance</a></li>
-                            <li><a href="#/settings/general" class="sidebar-link" data-section="general">Notifications</a></li>
+                            <li><a href="#" class="sidebar-link" data-section="general" onclick="event.preventDefault(); navigateTo('settings', { section: 'general' });">Appearance</a></li>
+                            <li><a href="#" class="sidebar-link" data-section="general" onclick="event.preventDefault(); navigateTo('settings', { section: 'general' });">Notifications</a></li>
                         </ul>
                     </div>
                     <div class="sidebar-section">
                         <h3>Activity</h3>
                         <ul>
-                            <li><a href="#/settings/activity/posts" class="sidebar-link" data-section="posts">Posts</a></li>
-                            <li><a href="#/settings/activity/reposts" class="sidebar-link" data-section="reposts">Reposts</a></li>
-                            <li><a href="#/settings/activity/comments" class="sidebar-link" data-section="comments">Comments & Replies</a></li>
+                            <li><a href="#" class="sidebar-link" data-section="posts" onclick="event.preventDefault(); navigateTo('settings', { section: 'posts' });">Posts</a></li>
+                            <li><a href="#" class="sidebar-link" data-section="reposts" onclick="event.preventDefault(); navigateTo('settings', { section: 'reposts' });">Reposts</a></li>
+                            <li><a href="#" class="sidebar-link" data-section="comments" onclick="event.preventDefault(); navigateTo('settings', { section: 'comments' });">Comments & Replies</a></li>
                         </ul>
                     </div>
                 </nav>
@@ -305,11 +297,9 @@
                 </div>
             </div>
         </section>
-
-        </section>
     </main>
 
-    <!-- Custom Themed Dialog (Moved outside main for better z-index/overflow handling) -->
+    <!-- Custom Themed Dialog -->
     <div id="customDialog" class="custom-dialog" style="display: none;">
         <div class="custom-dialog-backdrop" onclick="closeCustomDialog()"></div>
         <div class="custom-dialog-content">
@@ -330,7 +320,5 @@
     <footer>
         <p>Powered by vanilla JavaScript & Supabase. Hosted on <a href="https://js.org" target="_blank">js.org</a></p>
     </footer>
-
-    
 </body>
 </html>
