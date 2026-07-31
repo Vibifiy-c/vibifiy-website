@@ -147,9 +147,7 @@ const pages = document.querySelectorAll('.page');
 // When you move to vibifiy.js.org, change this to '/'
 const BASE_PATH = window.location.hostname.includes('github.io') ? '/vibifiy-website/' : '/';
 
-// Define the base path for the repository
-// When you move to vibifiy.js.org, change this to '/'
-const BASE_PATH = window.location.hostname.includes('github.io') ? '/vibifiy-website/' : '/';
+
 
 // Enhanced navigation with URL routing
 function navigateTo(pageId, params = {}) {
