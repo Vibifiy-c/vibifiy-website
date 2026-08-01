@@ -58,13 +58,41 @@ input:focus, textarea:focus {
     box-shadow: 0 0 0 3px rgba(160, 32, 240, 0.15) !important;
 }
 
-/* Active nav link */
-.nav-link.active {
-    color: #a020f0 !important;
+/* =========================================
+   TOP NAVIGATION LINKS (Purple Box Highlight)
+   ========================================= */
+.nav-link {
+    text-decoration: none;
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.25s ease;
+    border: 1px solid transparent;
+    position: relative;
 }
 
-.nav-link.active::after {
-    background: #a020f0 !important;
+/* Hover State */
+.nav-link:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Active State: The Purple Box Highlight */
+.nav-link.active {
+    color: #ffffff;
+    background: linear-gradient(135deg, rgba(160, 32, 240, 0.15) 0%, rgba(217, 70, 239, 0.15) 100%);
+    border: 1px solid var(--accent, #a020f0);
+    box-shadow: 0 0 15px rgba(160, 32, 240, 0.25), inset 0 0 10px rgba(160, 32, 240, 0.1);
+    font-weight: 600;
+}
+
+/* Optional: Make the navbar itself look a bit more polished to match */
+.navbar {
+    background: rgba(10, 10, 10, 0.85); /* Slight transparency */
+    backdrop-filter: blur(12px); /* Glassmorphism effect */
+    border-bottom: 1px solid var(--border);
 }
 
 /* Stat values and accent text */
